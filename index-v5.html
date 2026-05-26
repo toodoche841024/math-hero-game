@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>星界召喚師 — 數學奇航</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;
+  font-family:'Noto Sans TC',sans-serif;color:#fff;touch-action:manipulation}
+
+/* ── Screens ── */
+.screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;overflow:hidden}
+.screen.active{display:flex}
+
+/* ── Title ── */
+#s-title{background:radial-gradient(ellipse at 50% 30%,#0d0d2e 0%,#000010 100%)}
+#starCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.title-content{position:relative;z-index:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;height:100%;gap:18px;padding:24px;text-align:center}
+.logo-main{font-family:'Orbitron',sans-serif;font-size:clamp(26px,6vw,52px);font-weight:900;
+  background:linear-gradient(135deg,#00d4ff 0%,#7b2fff 50%,#ff6b00 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 20px rgba(0,212,255,0.6));letter-spacing:2px}
+.logo-sub{font-size:clamp(14px,3.5vw,22px);color:#aaccff;letter-spacing:5px;margin-top:4px}
+#titleHeroWrap{height:160px;display:flex;align-items:flex-end;justify-content:center;
+  animation:titleFloat 2.5s ease-in-out infinite;
+  filter:drop-shadow(0 0 20px rgba(0,212,255,0.7))}
+#titleHeroWrap svg{height:160px;width:auto}
+@keyframes titleFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.btn-start{background:linear-gradient(135deg,#00d4ff,#0055cc);color:#fff;
+  font-family:'Noto Sans TC',sans-serif;font-size:20px;font-weight:700;
+  padding:16px 52px;border:none;border-radius:14px;cursor:pointer;letter-spacing:2px;
+  box-shadow:0 0 20px rgba(0,212,255,0.5),0 4px 20px rgba(0,0,0,0.5);transition:all 0.2s}
+.btn-start:hover{transform:translateY(-3px);box-shadow:0 0 35px rgba(0,212,255,0.8)}
+.title-tagline{color:#6688aa;font-size:13px;letter-spacing:2px}
+
+/* ── Back button ── */
+.back-btn{position:absolute;top:14px;left:14px;background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.25);color:#ccd;padding:8px 18px;
+  border-radius:8px;cursor:pointer;font-size:14px;z-index:10;font-family:'Noto Sans TC',sans-serif}
+
+/* ── Planet Select ── */
+#s-planet{background:radial-gradient(ellipse at 50% 40%,#0d0d2e,#000)}
+.screen-big-title{font-family:'Orbitron',sans-serif;font-size:20px;color:#00d4ff;
+  margin:20px 0 10px;letter-spacing:4px;text-shadow:0 0 10px #00d4ff}
+.planets-grid{display:flex;flex-wrap:wrap;gap:24px;justify-content:center;padding:20px}
+.planet-card{width:140px;text-align:center;cursor:pointer;transition:transform 0.3s}
+.planet-card:hover:not(.planet-locked){transform:scale(1.06)}
+.planet-orb{width:120px;height:120px;border-radius:50%;margin:0 auto 10px;position:relative;
+  display:flex;align-items:center;justify-content:center;font-size:44px;overflow:hidden}
+.planet-burning .planet-orb{
+  background:radial-gradient(circle at 35% 35%,#ff9a3c,#ff3300,#8b0000);
+  box-shadow:0 0 30px #ff6600,0 0 60px #ff330055;animation:pPulse 2s ease-in-out infinite}
+.planet-locked .planet-orb{background:#222;filter:blur(2px);box-shadow:none;color:#555}
+@keyframes pPulse{0%,100%{box-shadow:0 0 25px #ff6600,0 0 50px #ff330044}
+  50%{box-shadow:0 0 45px #ff9900,0 0 90px #ff660033}}
+.planet-name{font-size:14px;font-weight:700;margin-top:6px}
+.planet-sub{font-size:12px;color:#888;margin-top:3px}
+
+/* ── World Map ── */
+#s-world{background:linear-gradient(180deg,#1a0505,#3d0000,#140000)}
+.ops-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;
+  padding:14px;width:100%;max-width:420px;margin-top:4px}
+.op-card{background:rgba(0,0,0,0.45);border:2px solid rgba(255,100,0,0.35);
+  border-radius:16px;padding:18px 14px;text-align:center;cursor:pointer;transition:all 0.25s}
+.op-card:hover{border-color:#ff6b00;transform:translateY(-3px);
+  box-shadow:0 8px 24px rgba(255,107,0,0.3)}
+.op-icon{font-size:34px;font-family:'Orbitron',sans-serif;color:#ff9944;margin-bottom:6px}
+.op-name{font-size:17px;font-weight:700;color:#ffcc88}
+.op-progress-wrap{height:4px;background:#333;border-radius:2px;margin-top:10px;overflow:hidden}
+.op-progress-bar{height:100%;background:linear-gradient(90deg,#ff6b00,#ffd700);border-radius:2px;transition:width 0.5s}
+.op-count{font-size:11px;color:#aa7744;margin-top:5px}
+
+/* ── Level Select ── */
+#s-levels{background:linear-gradient(180deg,#1a0505,#3d0000,#140000);overflow-y:auto}
+.lvl-header{display:flex;align-items:center;padding:12px 14px;
+  background:rgba(26,5,5,0.96);position:sticky;top:0;z-index:10;width:100%;gap:10px;
+  border-bottom:1px solid rgba(255,100,0,0.25)}
+.lvl-header h2{font-family:'Orbitron',sans-serif;font-size:17px;color:#ff9944}
+.lvl-back-btn{background:none;border:none;color:#ff9944;font-size:22px;cursor:pointer;padding:4px}
+.levels-list{width:100%;max-width:440px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.level-card{background:rgba(0,0,0,0.5);border:2px solid rgba(255,100,0,0.28);
+  border-radius:12px;padding:14px;cursor:pointer;transition:all 0.25s;display:flex;align-items:center;gap:12px}
+.level-card:hover:not(.locked){border-color:#ff7700;transform:translateX(4px)}
+.level-card.locked{opacity:0.38;cursor:not-allowed}
+.level-icon{font-size:30px;flex-shrink:0}
+.level-info{flex:1;min-width:0}
+.level-name{font-size:14px;font-weight:700;color:#ffcc88}
+.level-meta{font-size:11px;color:#886644;margin-top:2px}
+.level-rec{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap}
+.grade-chip{padding:2px 9px;border-radius:6px;font-size:12px;font-weight:700;
+  font-family:'Orbitron',sans-serif;flex-shrink:0}
+.g-S{background:#ffd700;color:#000}
+.g-A{background:#00d4ff;color:#000}
+.g-B{background:#7b2fff;color:#fff}
+.g-C{background:#555;color:#fff}
+.level-score{font-size:11px;color:#aa8866}
+.lock-icon{font-size:20px;margin-left:auto}
+
+/* ── Intro ── */
+#s-intro{background:radial-gradient(ellipse at 50% 50%,#200000,#000);
+  justify-content:center;align-items:center}
+.intro-box{text-align:center;z-index:1;padding:20px}
+.intro-level-tag{font-family:'Orbitron',sans-serif;font-size:14px;color:#ff9944;
+  letter-spacing:3px;margin-bottom:14px}
+.intro-vs-row{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:8px}
+.intro-hero-name{font-size:20px;font-weight:700;color:#00d4ff}
+.intro-vs{font-size:14px;color:#888}
+.intro-mon-name{font-size:20px;font-weight:700;color:#ff4422}
+.countdown-num{font-family:'Orbitron',sans-serif;font-size:110px;font-weight:900;
+  color:#ffd700;text-shadow:0 0 40px #ffd700,0 0 80px #ffd70066;
+  line-height:1;margin-top:20px;min-height:120px;display:flex;align-items:center;justify-content:center}
+.countdown-num.pop{animation:cPop 0.85s ease-out forwards}
+@keyframes cPop{0%{transform:scale(1.8);opacity:0}30%{opacity:1;transform:scale(1)}
+  80%{transform:scale(0.95);opacity:1}100%{transform:scale(0.9);opacity:0.6}}
+
+/* ── Game Screen ── */
+#s-game{background:#000;flex-direction:column}
+
+/* HUD */
+.hud{width:100%;background:rgba(0,0,0,0.85);border-bottom:1px solid rgba(255,107,0,0.3);
+  padding:5px 10px;display:flex;align-items:center;gap:6px;flex-shrink:0;min-height:54px}
+.hud-left{display:flex;flex-direction:column;align-items:flex-start;min-width:70px}
+.hearts-row{font-size:15px;letter-spacing:1px;line-height:1.2}
+.hud-center{flex:1;text-align:center;min-width:0}
+.hud-level-tag{font-size:9px;color:#888;font-family:'Orbitron',sans-serif;letter-spacing:1px}
+.timer-big{font-family:'Orbitron',sans-serif;font-size:30px;font-weight:900;
+  color:#ffd700;text-shadow:0 0 10px #ffd700;line-height:1.1}
+.timer-big.danger{color:#ff2200;text-shadow:0 0 15px #ff2200;
+  animation:tFlash 0.5s ease-in-out infinite alternate}
+@keyframes tFlash{from{opacity:1}to{opacity:0.4}}
+.hud-q-info{font-size:10px;color:#aaa;font-family:'Orbitron',sans-serif}
+.hud-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;min-width:80px}
+.mon-hp-bar{width:78px;height:8px;background:#1a0000;border-radius:4px;overflow:hidden;
+  border:1px solid rgba(255,80,0,0.4)}
+.mon-hp-fill{height:100%;background:linear-gradient(90deg,#ff2200,#ff7700);
+  border-radius:4px;transition:width 0.35s ease}
+.mon-hp-txt{font-size:10px;color:#ff7700;font-family:'Orbitron',sans-serif}
+.score-disp{font-size:11px;color:#ffd700;font-family:'Orbitron',sans-serif}
+
+/* Battle Stage */
+.battle-stage{flex:1;position:relative;overflow:hidden;min-height:0;
+  display:flex;align-items:flex-end;justify-content:space-between;padding:0 8px 12px}
+.stage-bg{position:absolute;inset:0;z-index:0;
+  background:linear-gradient(180deg,#1a000a 0%,#3d0500 22%,#7a1500 50%,#bb3300 72%,#220000 100%)}
+.volcano-layer{position:absolute;bottom:0;left:0;right:0;z-index:1;pointer-events:none}
+.lava-crack{position:absolute;bottom:0;left:0;right:0;height:18px;z-index:2;
+  background:repeating-linear-gradient(90deg,#ff4400 0px,#ff8800 18px,#cc2200 36px,#ff4400 54px);
+  animation:lavaShift 2.5s linear infinite}
+@keyframes lavaShift{from{background-position:0}to{background-position:54px 0}}
+.fire-particles{position:absolute;inset:0;z-index:3;pointer-events:none;overflow:hidden}
+.spark{position:absolute;border-radius:50% 50% 40% 40%;animation:sparkUp linear infinite;opacity:0}
+@keyframes sparkUp{
+  0%{transform:translateY(0) translateX(0);opacity:0.9}
+  40%{opacity:0.7;transform:translateY(-35vh) translateX(var(--dx))}
+  100%{transform:translateY(-85vh) translateX(calc(var(--dx)*1.8));opacity:0}}
+
+/* Fighter layout */
+.fighter-wrap{position:relative;z-index:10;display:flex;flex-direction:column;
+  align-items:center;gap:6px}
+.fighter-label{font-size:11px;color:rgba(255,255,255,0.65);font-weight:700;
+  text-shadow:0 1px 4px rgba(0,0,0,0.8)}
+.fighter-sprite{min-width:80px;min-height:160px;display:flex;
+  align-items:flex-end;justify-content:center;position:relative}
+.fighter-sprite svg{height:clamp(140px,21vh,190px);width:auto;overflow:visible}
+
+/* Idle animations */
+[data-char="hero"]{animation:fHero 2.2s ease-in-out infinite;
+  filter:drop-shadow(0 0 12px rgba(0,212,255,0.55))}
+[data-char="imp"]{animation:fImp 1.7s ease-in-out infinite;
+  filter:drop-shadow(0 0 14px rgba(255,120,0,0.65))}
+[data-char="golem"]{animation:fGolem 3s ease-in-out infinite;
+  filter:drop-shadow(0 0 12px rgba(255,100,0,0.4))}
+[data-char="dragon"]{animation:fDragon 2.4s ease-in-out infinite;
+  filter:drop-shadow(0 0 14px rgba(255,60,0,0.6))}
+[data-char="demon"]{animation:fDemon 2s ease-in-out infinite;
+  filter:drop-shadow(0 0 18px rgba(150,0,255,0.75))}
+@keyframes fHero{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes fImp{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(-10px) scaleY(1.07)}}
+@keyframes fGolem{0%,100%{transform:rotate(0deg) translateX(0)}33%{transform:rotate(-2deg) translateX(-4px)}66%{transform:rotate(2deg) translateX(4px)}}
+@keyframes fDragon{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-8px) scale(1.02)}}
+@keyframes fDemon{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-10px) scale(1.04)}}
+
+/* Battle animation classes */
+.anim-hero-atk{animation:heroAtk 0.5s ease-in-out forwards !important}
+.anim-mon-atk{animation:monAtk 0.5s ease-in-out forwards !important}
+.anim-flash-hit{animation:flashHit 0.3s ease-in-out !important}
+.anim-flash-hurt{animation:flashHurt 0.3s ease-in-out !important}
+.anim-shake{animation:doShake 0.3s ease-in-out !important}
+@keyframes heroAtk{0%{transform:translateX(0)}45%{transform:translateX(90px)}100%{transform:translateX(0)}}
+@keyframes monAtk{0%{transform:translateX(0)}45%{transform:translateX(-80px)}100%{transform:translateX(0)}}
+@keyframes flashHit{0%,100%{filter:none}50%{filter:brightness(8) drop-shadow(0 0 25px #fff)}}
+@keyframes flashHurt{0%,100%{filter:none}50%{filter:brightness(3) sepia(1) hue-rotate(-20deg) drop-shadow(0 0 20px #f00)}}
+@keyframes doShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}60%{transform:translateX(8px)}}
+
+/* Screen flash overlay */
+.screen-flash-overlay{position:absolute;inset:0;z-index:50;pointer-events:none;opacity:0}
+.sfo-yellow{animation:sfoY 0.35s ease-out forwards}
+.sfo-red{animation:sfoR 0.35s ease-out forwards}
+@keyframes sfoY{0%{opacity:0.5;background:#ffd700}100%{opacity:0;background:#ffd700}}
+@keyframes sfoR{0%{opacity:0.4;background:#ff0000}100%{opacity:0;background:#ff0000}}
+
+/* Question area */
+.q-area{width:100%;background:rgba(0,0,0,0.8);
+  border-top:1px solid rgba(255,107,0,0.35);border-bottom:1px solid rgba(255,107,0,0.35);
+  padding:10px 12px;flex-shrink:0}
+.q-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;gap:10px}
+.q-bar-wrap{flex:1;height:5px;background:#1a0a00;border-radius:3px;overflow:hidden}
+.q-bar{height:100%;background:linear-gradient(90deg,#00d4ff,#ffd700);
+  border-radius:3px;transition:width 0.12s linear;width:100%}
+.wrong-row{font-size:15px;letter-spacing:3px;flex-shrink:0}
+.q-display{text-align:center;font-family:'Orbitron',sans-serif;
+  font-size:clamp(22px,5.5vw,34px);font-weight:700;color:#ffffff;
+  letter-spacing:3px;text-shadow:0 0 12px rgba(255,255,255,0.25);line-height:1.3}
+.ans-display{text-align:center;font-family:'Orbitron',sans-serif;
+  font-size:clamp(18px,4.5vw,28px);color:#00d4ff;font-weight:700;
+  min-height:30px;letter-spacing:4px;margin-top:3px}
+
+/* Numpad */
+.numpad{width:100%;max-width:370px;margin:0 auto;padding:8px;flex-shrink:0;
+  display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.nbtn{height:52px;border:none;border-radius:10px;font-size:21px;font-weight:700;
+  font-family:'Orbitron',sans-serif;cursor:pointer;transition:all 0.1s;user-select:none;
+  background:rgba(22,22,55,0.92);border:1px solid rgba(88,88,180,0.3);color:#dde}
+.nbtn:active{transform:scale(0.92);background:rgba(50,50,110,0.95)}
+.nbtn.span2{grid-column:span 2}
+.nbtn.clr{background:rgba(80,15,15,0.92);border-color:rgba(220,50,50,0.4);color:#ff9999}
+.nbtn.ok{background:rgba(8,65,18,0.92);border-color:rgba(40,220,80,0.4);color:#44ff66;
+  box-shadow:0 0 10px rgba(40,220,80,0.25);font-size:24px}
+.nbtn.ok:hover{box-shadow:0 0 22px rgba(40,220,80,0.5)}
+
+/* ── Win ── */
+#s-win{background:radial-gradient(ellipse at 50% 30%,#001833,#000010);
+  justify-content:center;align-items:center;overflow-y:auto}
+.win-box{text-align:center;padding:24px 20px;width:100%;max-width:400px}
+.win-title{font-family:'Orbitron',sans-serif;font-size:34px;font-weight:900;
+  color:#ffd700;text-shadow:0 0 20px #ffd700;margin-bottom:12px}
+.grade-big{font-family:'Orbitron',sans-serif;font-size:88px;font-weight:900;line-height:1;
+  animation:gradeIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275)}
+@keyframes gradeIn{from{transform:scale(0) rotate(-20deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
+.gb-S{color:#ffd700;text-shadow:0 0 30px #ffd700,0 0 60px #ffd70088}
+.gb-A{color:#00d4ff;text-shadow:0 0 25px #00d4ff}
+.gb-B{color:#cc88ff;text-shadow:0 0 20px #7b2fff}
+.gb-C{color:#aaaaaa}
+.win-score{font-family:'Orbitron',sans-serif;font-size:22px;color:#fff;margin:10px 0}
+.win-stars{font-size:18px;color:#ffd700;margin:6px 0}
+.win-acc{font-size:13px;color:#888;margin-bottom:14px}
+.treasure-box{background:rgba(255,215,0,0.08);border:2px solid rgba(255,215,0,0.7);
+  border-radius:14px;padding:14px;margin:12px 0;animation:tGlow 1.2s ease-in-out infinite alternate}
+@keyframes tGlow{from{box-shadow:0 0 10px rgba(255,215,0,0.3)}to{box-shadow:0 0 30px rgba(255,215,0,0.7),0 0 60px rgba(255,215,0,0.3)}}
+.treasure-big-icon{font-size:42px}
+.treasure-got-name{font-size:14px;color:#ffd700;margin-top:6px;font-weight:700}
+.btn-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+.btn-main{background:linear-gradient(135deg,#00d4ff,#0055cc);color:#fff;
+  font-family:'Noto Sans TC',sans-serif;font-size:16px;font-weight:700;
+  padding:12px 28px;border:none;border-radius:10px;cursor:pointer;transition:all 0.2s}
+.btn-main:hover{transform:translateY(-2px)}
+.btn-sec{background:rgba(25,25,60,0.9);border:1px solid rgba(100,100,200,0.4);
+  color:#aabbdd;padding:10px 20px;border-radius:10px;cursor:pointer;font-size:14px;
+  font-family:'Noto Sans TC',sans-serif;transition:all 0.2s}
+.btn-sec:hover{border-color:#00d4ff;color:#00d4ff}
+
+/* ── Lose ── */
+#s-lose{background:radial-gradient(ellipse at 50% 50%,#1a0000,#000);
+  justify-content:center;align-items:center}
+.lose-box{text-align:center;padding:28px 22px;max-width:360px}
+.lose-title{font-family:'Orbitron',sans-serif;font-size:30px;font-weight:900;
+  color:#ff2200;text-shadow:0 0 20px #ff2200;margin-bottom:16px}
+.lose-msg{font-size:16px;color:#cc8888;line-height:1.7;margin-bottom:12px}
+.lose-stats{font-size:13px;color:#ff9944;margin-bottom:20px}
+.btn-coming{background:rgba(30,30,30,0.8);border:1px solid #333;
+  color:#555;padding:10px 20px;border-radius:10px;font-size:13px;
+  font-family:'Noto Sans TC',sans-serif;cursor:default}
+
+/* ── Collection ── */
+#s-collection{background:radial-gradient(ellipse at 50% 30%,#080020,#000010);overflow-y:auto}
+.coll-header{display:flex;align-items:center;padding:12px 14px;
+  background:rgba(8,0,32,0.96);position:sticky;top:0;z-index:10;width:100%;
+  gap:10px;border-bottom:1px solid rgba(255,215,0,0.2)}
+.coll-header h2{font-family:'Orbitron',sans-serif;font-size:17px;color:#ffd700}
+.coll-back{background:none;border:none;color:#ffd700;font-size:22px;cursor:pointer;padding:4px}
+.stars-total-row{font-family:'Orbitron',sans-serif;font-size:20px;color:#ffd700;
+  text-shadow:0 0 10px #ffd700;margin:14px 0;text-align:center}
+.treasures-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;
+  padding:0 14px 20px;width:100%;max-width:420px}
+.t-slot{background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.15);
+  border-radius:11px;padding:12px 8px;text-align:center;min-height:88px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.t-slot.earned{border-color:rgba(255,215,0,0.55);background:rgba(255,215,0,0.08);
+  box-shadow:0 0 12px rgba(255,215,0,0.18)}
+.t-slot .tsi{font-size:26px}
+.t-slot .tsn{font-size:10px;color:#ffd700;font-weight:700;line-height:1.3}
+.t-slot .tsf{font-size:9px;color:#666}
+.t-slot.locked-t .tsi{opacity:0.18;filter:grayscale(1)}
+</style>
+</head>
+<body>
+
+<canvas id="starCanvas"></canvas>
+
+<!-- ── S1: Title ── -->
+<div id="s-title" class="screen active">
+  <div class="title-content">
+    <div>
+      <div class="logo-main">星界召喚師</div>
+      <div class="logo-sub">數學奇航</div>
+    </div>
+    <div id="titleHeroWrap"></div>
+    <button class="btn-start" onclick="goTo('s-planet')">開始冒險</button>
+    <div class="title-tagline">用數學之力召喚守護神！</div>
+  </div>
+</div>
+
+<!-- ── S2: Planet Select ── -->
+<div id="s-planet" class="screen">
+  <button class="back-btn" onclick="goTo('s-title')">← 返回</button>
+  <div class="screen-big-title">選擇星球</div>
+  <div class="planets-grid">
+    <div class="planet-card planet-burning" onclick="goTo('s-world')">
+      <div class="planet-orb">🔥</div>
+      <div class="planet-name">燃燒星</div>
+      <div class="planet-sub">四則運算挑戰</div>
+    </div>
+    <div class="planet-card planet-locked">
+      <div class="planet-orb" style="font-size:38px;color:#333">?</div>
+      <div class="planet-name" style="color:#444">???</div>
+      <div class="planet-sub">🔒 未解鎖</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── S3: World Map ── -->
+<div id="s-world" class="screen">
+  <button class="back-btn" onclick="goTo('s-planet')">← 返回</button>
+  <div class="screen-big-title">燃燒星</div>
+  <div class="ops-grid" id="opsGrid"></div>
+</div>
+
+<!-- ── S4: Level Select ── -->
+<div id="s-levels" class="screen">
+  <div class="lvl-header">
+    <button class="lvl-back-btn" onclick="goTo('s-world')">←</button>
+    <h2 id="lvlSelTitle"></h2>
+  </div>
+  <div class="levels-list" id="levelsList"></div>
+</div>
+
+<!-- ── S5: Intro ── -->
+<div id="s-intro" class="screen">
+  <div class="intro-box">
+    <div class="intro-level-tag" id="introTag"></div>
+    <div class="intro-vs-row">
+      <span class="intro-hero-name">召喚師</span>
+      <span class="intro-vs">VS</span>
+      <span class="intro-mon-name" id="introMonName"></span>
+    </div>
+    <div class="countdown-num" id="cdNum">3</div>
+  </div>
+</div>
+
+<!-- ── S6: Game ── -->
+<div id="s-game" class="screen">
+  <div class="screen-flash-overlay" id="sfo"></div>
+
+  <!-- HUD -->
+  <div class="hud">
+    <div class="hud-left">
+      <div class="hearts-row" id="heartsRow">❤️❤️❤️</div>
+    </div>
+    <div class="hud-center">
+      <div class="hud-level-tag" id="hudTag"></div>
+      <div class="timer-big" id="timerBig">--</div>
+      <div class="hud-q-info" id="hudQInfo"></div>
+    </div>
+    <div class="hud-right">
+      <div class="mon-hp-bar"><div class="mon-hp-fill" id="monHpFill" style="width:100%"></div></div>
+      <div class="mon-hp-txt" id="monHpTxt"></div>
+      <div class="score-disp" id="scoreDisp">0分</div>
+    </div>
+  </div>
+
+  <!-- Battle Stage -->
+  <div class="battle-stage" id="battleStage">
+    <div class="stage-bg"></div>
+    <svg class="volcano-layer" viewBox="0 0 400 180" preserveAspectRatio="none"
+      xmlns="http://www.w3.org/2000/svg" style="height:55%;bottom:0;position:absolute">
+      <defs>
+        <radialGradient id="vglow"><stop offset="0%" stop-color="#ff6600" stop-opacity="0.7"/>
+        <stop offset="100%" stop-color="#ff0000" stop-opacity="0"/></radialGradient>
+      </defs>
+      <path d="M0,180 L50,180 L90,100 L120,180 L200,180 L245,60 L290,180 L340,180 L375,90 L400,180 Z" fill="#120000"/>
+      <path d="M90,100 L78,180 L102,180 Z" fill="#cc2200" opacity="0.6"/>
+      <path d="M245,60 L230,180 L260,180 Z" fill="#cc2200" opacity="0.6"/>
+      <ellipse cx="90" cy="100" rx="22" ry="9" fill="url(#vglow)"/>
+      <ellipse cx="245" cy="60" rx="28" ry="11" fill="url(#vglow)"/>
+    </svg>
+    <div class="lava-crack"></div>
+    <div class="fire-particles" id="fireParticles"></div>
+
+    <div class="fighter-wrap" id="heroWrap">
+      <div class="fighter-sprite" id="heroSprite" data-char="hero"></div>
+      <div class="fighter-label">召喚師</div>
+    </div>
+    <div class="fighter-wrap" id="monWrap">
+      <div class="fighter-sprite" id="monSprite"></div>
+      <div class="fighter-label" id="monLabel">-</div>
+    </div>
+  </div>
+
+  <!-- Question -->
+  <div class="q-area">
+    <div class="q-top">
+      <div class="q-bar-wrap"><div class="q-bar" id="qBar"></div></div>
+      <div class="wrong-row" id="wrongRow">○○○</div>
+    </div>
+    <div class="q-display" id="qDisplay">準備中...</div>
+    <div class="ans-display" id="ansDisplay">_</div>
+  </div>
+
+  <!-- Numpad -->
+  <div class="numpad">
+    <button class="nbtn" data-v="7">7</button>
+    <button class="nbtn" data-v="8">8</button>
+    <button class="nbtn" data-v="9">9</button>
+    <button class="nbtn" data-v="4">4</button>
+    <button class="nbtn" data-v="5">5</button>
+    <button class="nbtn" data-v="6">6</button>
+    <button class="nbtn" data-v="1">1</button>
+    <button class="nbtn" data-v="2">2</button>
+    <button class="nbtn" data-v="3">3</button>
+    <button class="nbtn span2" data-v="0">0</button>
+    <button class="nbtn clr" data-v="C">C</button>
+    <button class="nbtn ok" data-v="OK">✓</button>
+  </div>
+</div>
+
+<!-- ── S7: Win ── -->
+<div id="s-win" class="screen">
+  <div class="win-box">
+    <div class="win-title">⭐ 過關！</div>
+    <div class="grade-big" id="winGrade"></div>
+    <div class="win-score" id="winScore"></div>
+    <div class="win-stars" id="winStars"></div>
+    <div class="win-acc" id="winAcc"></div>
+    <div class="treasure-box" id="treasureBox" style="display:none">
+      <div class="treasure-big-icon" id="treasureBigIcon"></div>
+      <div class="treasure-got-name" id="treasureGotName"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-main" onclick="retryLevel()">再挑戰</button>
+      <button class="btn-sec" onclick="goTo('s-world')">選關卡</button>
+      <button class="btn-sec" onclick="openCollection()">我的收藏</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── S8: Lose ── -->
+<div id="s-lose" class="screen">
+  <div class="lose-box">
+    <div class="lose-title">💀 挑戰失敗</div>
+    <div class="lose-msg" id="loseMsg"></div>
+    <div class="lose-stats" id="loseStats"></div>
+    <div class="btn-row">
+      <button class="btn-main" onclick="retryLevel()">再試一次</button>
+      <button class="btn-sec" onclick="goTo('s-world')">回選關卡</button>
+      <button class="btn-coming">練功區（即將推出）</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── S9: Collection ── -->
+<div id="s-collection" class="screen">
+  <div class="coll-header">
+    <button class="coll-back" onclick="goTo('s-world')">←</button>
+    <h2>我的收藏</h2>
+  </div>
+  <div class="stars-total-row" id="starsTotalRow"></div>
+  <div class="treasures-grid" id="treasuresGrid"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════
+const LEVELS = {
+  '1.1.1':{op:'+',name:'一位數＋一位數',time:90, sc:[[3,100],[5,90],[7,80],[8,70],[9,60]],df:50,S:900,A:800,B:700,mon:'imp',  mnm:'火焰惡魔',tr:{i:'🏅',n:'火焰徽章'}},
+  '1.1.2':{op:'+',name:'二位數＋一位數',time:120,sc:[[3,100],[5,90],[7,80],[8,70],[9,60]],df:50,S:900,A:800,B:700,mon:'imp',  mnm:'火焰惡魔',tr:{i:'🌋',n:'熔岩勳章'}},
+  '1.1.3':{op:'+',name:'二位數＋二位數',time:150,sc:[[5,100],[7,90],[9,80],[10,70],[11,60]],df:50,S:800,A:700,B:600,mon:'imp', mnm:'火焰惡魔',tr:{i:'⚡',n:'雷光章'}},
+  '1.1.4':{op:'+',name:'三位數＋二位數',time:180,sc:[[5,100],[7,90],[9,80],[10,70],[11,60]],df:50,S:800,A:700,B:600,mon:'imp', mnm:'火焰惡魔',tr:{i:'🌠',n:'流星章'}},
+  '1.1.5':{op:'+',name:'三位數＋三位數',time:180,sc:[[5,100],[7,90],[9,80],[10,70],[11,60]],df:50,S:750,A:650,B:550,mon:'imp', mnm:'火焰惡魔',tr:{i:'✨',n:'星光章'}},
+  '1.2.1':{op:'-',name:'一位數－一位數',time:90, sc:[[5,100],[7,90],[9,80],[10,70],[11,60]],df:50,S:900,A:800,B:700,mon:'golem',mnm:'岩石魔像',tr:{i:'🪨',n:'岩石臂環'}},
+  '1.2.2':{op:'-',name:'二位數－一位數',time:120,sc:[[5,100],[7,90],[9,80],[10,70],[11,60]],df:50,S:900,A:800,B:700,mon:'golem',mnm:'岩石魔像',tr:{i:'⛏️',n:'熔岩鑿'}},
+  '1.2.3':{op:'-',name:'二位數－二位數',time:150,sc:[[5,100],[7,90],[9,80],[10,70],[11,60]],df:50,S:800,A:700,B:600,mon:'golem',mnm:'岩石魔像',tr:{i:'🔮',n:'熔晶石'}},
+  '1.2.4':{op:'-',name:'三位數－二位數',time:180,sc:[[5,100],[7,90],[9,80],[10,70],[11,60]],df:50,S:800,A:700,B:600,mon:'golem',mnm:'岩石魔像',tr:{i:'💎',n:'岩心鑽'}},
+  '1.2.5':{op:'-',name:'三位數－三位數',time:180,sc:[[5,100],[7,90],[9,80],[10,70],[11,60]],df:50,S:750,A:650,B:550,mon:'golem',mnm:'岩石魔像',tr:{i:'🏆',n:'破岩冠'}},
+  '1.3.1':{op:'×',name:'一位數×一位數',time:90, sc:[[3,100],[5,90],[7,80],[8,70],[9,60]],df:50,S:900,A:800,B:700,mon:'dragon',mnm:'火焰巨龍',tr:{i:'🐉',n:'龍鱗片'}},
+  '1.3.2':{op:'×',name:'二位數×一位數',time:150,sc:[[5,100],[7,90],[9,80],[10,70],[11,60]],df:50,S:800,A:700,B:600,mon:'dragon',mnm:'火焰巨龍',tr:{i:'🔥',n:'龍焰石'}},
+  '1.3.3':{op:'×',name:'二位數×二位數',time:200,sc:[[10,100],[14,90],[18,80],[22,70],[24,60]],df:50,S:750,A:650,B:550,mon:'dragon',mnm:'火焰巨龍',tr:{i:'🪬',n:'龍心護符'}},
+  '1.3.4':{op:'×',name:'三位數×一位數',time:200,sc:[[10,100],[14,90],[18,80],[22,70],[24,60]],df:50,S:750,A:650,B:550,mon:'dragon',mnm:'火焰巨龍',tr:{i:'👑',n:'龍王冠'}},
+  '1.4.1':{op:'÷',name:'一位數÷一位數',time:90, sc:[[3,100],[5,90],[7,80],[8,70],[9,60]],df:50,S:900,A:800,B:700,mon:'demon',mnm:'暗焰魔王',tr:{i:'🌑',n:'暗焰印記'}},
+  '1.4.2':{op:'÷',name:'二位數÷一位數',time:150,sc:[[5,100],[7,90],[9,80],[10,70],[11,60]],df:50,S:800,A:700,B:600,mon:'demon',mnm:'暗焰魔王',tr:{i:'🔱',n:'暗王三叉'}},
+  '1.4.3':{op:'÷',name:'二位數÷二位數',time:200,sc:[[5,100],[7,90],[9,80],[10,70],[11,60]],df:50,S:750,A:650,B:550,mon:'demon',mnm:'暗焰魔王',tr:{i:'💀',n:'魔王骸骨'}},
+  '1.4.4':{op:'÷',name:'三位數÷一位數',time:200,sc:[[10,100],[14,90],[18,80],[22,70],[24,60]],df:50,S:750,A:650,B:550,mon:'demon',mnm:'暗焰魔王',tr:{i:'🌌',n:'暗界之眼'}},
+};
+const OPS = [
+  {id:'add',name:'加法',icon:'＋',ids:['1.1.1','1.1.2','1.1.3','1.1.4','1.1.5']},
+  {id:'sub',name:'減法',icon:'－',ids:['1.2.1','1.2.2','1.2.3','1.2.4','1.2.5']},
+  {id:'mul',name:'乘法',icon:'×',ids:['1.3.1','1.3.2','1.3.3','1.3.4']},
+  {id:'div',name:'除法',icon:'÷',ids:['1.4.1','1.4.2','1.4.3','1.4.4']},
+];
+const UNLOCK_CHAIN = Object.keys(LEVELS);
+const FAIL_MSGS = [
+  '再試一次，你一定可以！','失敗是成功之母，加油！',
+  '數學勇士不言敗！','熟能生巧，繼續練習！','收集更多碎片，再回來挑戰！',
+];
+
+// ═══════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════
+const SS = {
+  stars(){return +localStorage.getItem('mc_stars')||0},
+  addStars(n){localStorage.setItem('mc_stars',this.stars()+n)},
+  lv(id){try{return JSON.parse(localStorage.getItem('mc_lv_'+id))||null}catch{return null}},
+  saveLv(id,d){localStorage.setItem('mc_lv_'+id,JSON.stringify(d))},
+  unlocked(id){
+    const i=UNLOCK_CHAIN.indexOf(id);
+    if(i<=0)return true;
+    return !!SS.lv(UNLOCK_CHAIN[i-1]);
+  },
+  treasures(){try{return JSON.parse(localStorage.getItem('mc_tr'))||[]}catch{return[]}},
+  hasTr(id){return SS.treasures().includes(id)},
+  addTr(id){const t=SS.treasures();if(!t.includes(id)){t.push(id);localStorage.setItem('mc_tr',JSON.stringify(t))}},
+};
+
+// ═══════════════════════════════════════════════
+// SVG CHARACTERS
+// ═══════════════════════════════════════════════
+function heroSVG(hp=3){
+  const c = hp<=1 ? '#ff3300' : hp<=2 ? '#ffaa00' : '#00d4ff';
+  const g = hp<=1 ? 'rgba(255,50,0,.7)' : hp<=2 ? 'rgba(255,170,0,.6)' : 'rgba(0,212,255,.5)';
+  return `<svg viewBox="0 0 60 90" xmlns="http://www.w3.org/2000/svg" overflow="visible">
+<defs>
+  <radialGradient id="hg0"><stop offset="0%" stop-color="${c}" stop-opacity=".55"/><stop offset="100%" stop-color="${c}" stop-opacity="0"/></radialGradient>
+  <filter id="hf"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<ellipse cx="30" cy="78" rx="22" ry="7" fill="url(#hg0)"/>
+<!-- legs -->
+<rect x="18" y="66" width="10" height="18" rx="3" fill="#192866"/>
+<rect x="32" y="66" width="10" height="18" rx="3" fill="#192866"/>
+<rect x="16" y="79" width="13" height="6" rx="2" fill="#253898"/>
+<rect x="31" y="79" width="13" height="6" rx="2" fill="#253898"/>
+<!-- body -->
+<rect x="13" y="40" width="34" height="28" rx="5" fill="#1e2e7a"/>
+<path d="M21,42 L30,38 L39,42 L39,64 L30,67 L21,64 Z" fill="#2a3ea8"/>
+<line x1="30" y1="38" x2="30" y2="67" stroke="${c}" stroke-width="1.5" opacity=".55" filter="url(#hf)"/>
+<line x1="21" y1="52" x2="39" y2="52" stroke="${c}" stroke-width=".8" opacity=".35"/>
+<!-- pauldrons -->
+<ellipse cx="11" cy="43" rx="7" ry="9" fill="#2233aa"/>
+<ellipse cx="49" cy="43" rx="7" ry="9" fill="#2233aa"/>
+<ellipse cx="11" cy="43" rx="5" ry="7" fill="#3344cc"/>
+<ellipse cx="49" cy="43" rx="5" ry="7" fill="#3344cc"/>
+<!-- shield (left) -->
+<ellipse cx="-3" cy="52" rx="9" ry="11" fill="#440e99"/>
+<ellipse cx="-3" cy="52" rx="6.5" ry="8.5" fill="#5512bb"/>
+<line x1="-3" y1="43" x2="-3" y2="61" stroke="${c}" stroke-width="1.5" filter="url(#hf)"/>
+<line x1="-10" y1="52" x2="4" y2="52" stroke="${c}" stroke-width="1.5" filter="url(#hf)"/>
+<circle cx="-3" cy="52" r="2.5" fill="${c}" opacity=".8" filter="url(#hf)"/>
+<!-- sword (right) -->
+<rect x="53" y="18" width="4" height="34" rx="1.5" fill="#9999ff"/>
+<rect x="54" y="18" width="2" height="34" rx="1" fill="${c}" filter="url(#hf)"/>
+<rect x="50" y="46" width="10" height="3" rx="1.5" fill="#dde"/>
+<rect x="54" y="49" width="2" height="7" rx="1" fill="#aabbd4"/>
+<!-- helmet -->
+<ellipse cx="30" cy="27" rx="13" ry="14" fill="#192366"/>
+<ellipse cx="30" cy="25" rx="11" ry="11" fill="#2233a0"/>
+<path d="M19,27 L41,27 L41,34 L19,34 Z" fill="#0c0c1a"/>
+<rect x="21" y="27.5" width="6.5" height="2.5" rx="1.2" fill="${c}" filter="url(#hf)"/>
+<rect x="32.5" y="27.5" width="6.5" height="2.5" rx="1.2" fill="${c}" filter="url(#hf)"/>
+<path d="M25,12 L30,6 L35,12" fill="${c}" opacity=".75" filter="url(#hf)"/>
+<rect x="28" y="6" width="4" height="6" rx="1" fill="${c}" opacity=".6"/>
+</svg>`;
+}
+
+function impSVG(){
+  return `<svg viewBox="0 0 60 80" xmlns="http://www.w3.org/2000/svg" overflow="visible">
+<defs>
+  <radialGradient id="ifg" cx="38%" cy="32%"><stop offset="0%" stop-color="#ffcc44"/><stop offset="55%" stop-color="#ff6200"/><stop offset="100%" stop-color="#bb1100"/></radialGradient>
+  <filter id="iff"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<ellipse cx="35" cy="72" rx="18" ry="7" fill="#ff330055" filter="url(#iff)"/>
+<!-- tail -->
+<path d="M50,57 Q62,46 59,37 Q56,30 52,34" stroke="#cc2000" stroke-width="5" fill="none" stroke-linecap="round"/>
+<path d="M52,34 L56,26 L60,34 Z" fill="#ff4400"/>
+<!-- body -->
+<ellipse cx="33" cy="50" rx="20" ry="22" fill="url(#ifg)"/>
+<ellipse cx="33" cy="55" rx="12" ry="13" fill="#ffaa44" opacity=".45"/>
+<!-- arms -->
+<path d="M14,43 Q5,50 7,60" stroke="#ee5500" stroke-width="8" fill="none" stroke-linecap="round"/>
+<path d="M52,43 Q61,50 59,60" stroke="#ee5500" stroke-width="8" fill="none" stroke-linecap="round"/>
+<circle cx="7" cy="60" r="5" fill="#ee4200"/>
+<circle cx="59" cy="60" r="5" fill="#ee4200"/>
+<!-- head -->
+<ellipse cx="33" cy="26" rx="16" ry="17" fill="url(#ifg)"/>
+<!-- horns -->
+<path d="M22,14 Q17,3 23,9" stroke="#771a00" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+<path d="M44,14 Q49,3 43,9" stroke="#771a00" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+<!-- eyes -->
+<ellipse cx="26" cy="24" rx="7" ry="8" fill="#ffee00"/>
+<ellipse cx="40" cy="24" rx="7" ry="8" fill="#ffee00"/>
+<ellipse cx="26" cy="25" rx="3" ry="5" fill="#1a0000"/>
+<ellipse cx="40" cy="25" rx="3" ry="5" fill="#1a0000"/>
+<circle cx="25" cy="22" r="2" fill="#ffff99" opacity=".7"/>
+<circle cx="39" cy="22" r="2" fill="#ffff99" opacity=".7"/>
+<!-- mouth -->
+<path d="M24,35 Q33,41 42,35" stroke="#441100" stroke-width="2" fill="none"/>
+<line x1="28" y1="36" x2="26" y2="41" stroke="#fff" stroke-width="1.8"/>
+<line x1="38" y1="36" x2="40" y2="41" stroke="#fff" stroke-width="1.8"/>
+<!-- crown flame -->
+<path d="M29,10 Q27,2 33,7 Q31,0 37,5 Q39,-1 39,7 Q43,3 39,10" fill="#ffcc00" filter="url(#iff)" opacity=".9"/>
+</svg>`;
+}
+
+function golemSVG(){
+  return `<svg viewBox="0 0 72 85" xmlns="http://www.w3.org/2000/svg" overflow="visible">
+<defs>
+  <radialGradient id="ggg" cx="42%" cy="28%"><stop offset="0%" stop-color="#8a7060"/><stop offset="100%" stop-color="#3a2010"/></radialGradient>
+  <filter id="lgf"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<ellipse cx="36" cy="82" rx="26" ry="5" fill="#00000055"/>
+<!-- legs -->
+<rect x="15" y="63" width="16" height="19" rx="4" fill="#3a2010"/>
+<rect x="41" y="63" width="16" height="19" rx="4" fill="#3a2010"/>
+<rect x="13" y="76" width="18" height="8" rx="3" fill="#4a3020"/>
+<rect x="41" y="76" width="18" height="8" rx="3" fill="#4a3020"/>
+<line x1="23" y1="63" x2="23" y2="80" stroke="#ff6600" stroke-width="1.8" opacity=".85" filter="url(#lgf)"/>
+<line x1="49" y1="63" x2="49" y2="80" stroke="#ff6600" stroke-width="1.8" opacity=".85" filter="url(#lgf)"/>
+<!-- body+head (no neck) -->
+<rect x="7" y="14" width="58" height="52" rx="9" fill="url(#ggg)"/>
+<!-- giant left fist -->
+<ellipse cx="-4" cy="40" rx="13" ry="14" fill="#3a2010"/>
+<ellipse cx="-4" cy="40" rx="10" ry="11" fill="#493020"/>
+<path d="M-10,35 Q-7,28 1,32" stroke="#ff6600" stroke-width="2.2" opacity=".9" fill="none" filter="url(#lgf)"/>
+<!-- giant right fist -->
+<ellipse cx="76" cy="40" rx="13" ry="14" fill="#3a2010"/>
+<ellipse cx="76" cy="40" rx="10" ry="11" fill="#493020"/>
+<path d="M82,35 Q79,28 73,32" stroke="#ff6600" stroke-width="2.2" opacity=".9" fill="none" filter="url(#lgf)"/>
+<!-- body lava cracks -->
+<path d="M20,28 Q28,38 20,52" stroke="#ff8800" stroke-width="2" fill="none" opacity=".9" filter="url(#lgf)"/>
+<path d="M52,26 Q44,36 48,54" stroke="#ff6600" stroke-width="2" fill="none" opacity=".9" filter="url(#lgf)"/>
+<path d="M32,18 Q36,26 32,34 Q36,42 32,52" stroke="#ff4400" stroke-width="1.5" fill="none" opacity=".65" filter="url(#lgf)"/>
+<!-- face on body top -->
+<rect x="9" y="16" width="54" height="30" rx="6" fill="#4a3020"/>
+<path d="M9,29 Q36,22 63,29" fill="#2a1508" stroke="none"/>
+<!-- eyes recessed -->
+<ellipse cx="22" cy="27" rx="8" ry="7" fill="#180800"/>
+<ellipse cx="50" cy="27" rx="8" ry="7" fill="#180800"/>
+<ellipse cx="22" cy="27" rx="5" ry="5" fill="#ff3e00" filter="url(#lgf)"/>
+<ellipse cx="50" cy="27" rx="5" ry="5" fill="#ff3e00" filter="url(#lgf)"/>
+<ellipse cx="22" cy="27" rx="2.2" ry="2.8" fill="#ff8800"/>
+<ellipse cx="50" cy="27" rx="2.2" ry="2.8" fill="#ff8800"/>
+<!-- mouth -->
+<path d="M17,38 Q36,45 55,38" stroke="#ff4400" stroke-width="2" fill="none" opacity=".75"/>
+<line x1="22" y1="39" x2="20" y2="44" stroke="#ff4400" stroke-width="1.5"/>
+<line x1="50" y1="39" x2="52" y2="44" stroke="#ff4400" stroke-width="1.5"/>
+</svg>`;
+}
+
+function dragonSVG(){
+  return `<svg viewBox="0 0 80 85" xmlns="http://www.w3.org/2000/svg" overflow="visible">
+<defs>
+  <radialGradient id="drd" cx="38%" cy="28%"><stop offset="0%" stop-color="#c02800"/><stop offset="100%" stop-color="#4a0000"/></radialGradient>
+  <filter id="drf"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<!-- folded wings -->
+<path d="M10,26 Q-8,8 -4,30 Q2,52 14,46 Z" fill="#3d0e00" stroke="#771a00" stroke-width="1"/>
+<path d="M12,26 Q0,14 3,32 Q7,48 16,44 Z" fill="#5a1500"/>
+<line x1="4" y1="13" x2="12" y2="40" stroke="#ff4400" stroke-width=".9" opacity=".6"/>
+<line x1="-2" y1="24" x2="12" y2="44" stroke="#ff4400" stroke-width=".9" opacity=".5"/>
+<path d="M58,26 Q72,5 74,28 Q72,50 62,46 Z" fill="#3d0e00" stroke="#771a00" stroke-width="1"/>
+<path d="M56,26 Q68,12 70,30 Q68,48 62,44 Z" fill="#5a1500"/>
+<line x1="72" y1="10" x2="62" y2="40" stroke="#ff4400" stroke-width=".9" opacity=".6"/>
+<!-- tail with blade -->
+<path d="M55,66 Q66,60 70,50 Q73,42 69,38" stroke="#6e1100" stroke-width="9" fill="none" stroke-linecap="round"/>
+<path d="M69,38 L73,30 L77,38 Z" fill="#ff4400" filter="url(#drf)"/>
+<!-- body -->
+<ellipse cx="36" cy="52" rx="24" ry="22" fill="url(#drd)"/>
+<path d="M26,46 Q36,42 46,46 L46,70 Q36,74 26,70 Z" fill="#882500" opacity=".5"/>
+<!-- scale ridges -->
+<path d="M22,44 Q36,40 50,44" stroke="#ff4400" stroke-width=".9" fill="none" opacity=".5"/>
+<path d="M18,52 Q36,48 54,52" stroke="#ff3300" stroke-width=".9" fill="none" opacity=".45"/>
+<!-- legs -->
+<path d="M20,68 Q15,76 12,81" stroke="#6e1100" stroke-width="8" fill="none" stroke-linecap="round"/>
+<path d="M52,68 Q57,76 60,81" stroke="#6e1100" stroke-width="8" fill="none" stroke-linecap="round"/>
+<path d="M12,81 Q8,84 5,81 M12,81 Q10,86 8,83 M12,81 Q14,85 13,84" stroke="#4a0e00" stroke-width="2" fill="none"/>
+<path d="M60,81 Q64,84 67,81 M60,81 Q62,86 64,83 M60,81 Q58,85 59,84" stroke="#4a0e00" stroke-width="2" fill="none"/>
+<!-- neck -->
+<path d="M26,30 Q20,26 24,18 Q30,8 36,16 Q42,8 48,18 Q52,26 46,30" fill="url(#drd)"/>
+<!-- head -->
+<ellipse cx="36" cy="17" rx="16" ry="14" fill="url(#drd)"/>
+<!-- snout -->
+<ellipse cx="36" cy="23" rx="10" ry="6" fill="#7a2000"/>
+<circle cx="32" cy="21" r="2" fill="#280800"/>
+<circle cx="40" cy="21" r="2" fill="#280800"/>
+<!-- open mouth with flame -->
+<path d="M25,23 Q36,30 47,23" stroke="#4a0e00" stroke-width="2" fill="none"/>
+<path d="M31,25 Q34,22 36,27 Q38,22 41,25" fill="#ffcc00" filter="url(#drf)"/>
+<line x1="29" y1="25" x2="27" y2="29" stroke="#eee" stroke-width="1.5"/>
+<line x1="36" y1="27" x2="36" y2="31" stroke="#eee" stroke-width="1.5"/>
+<line x1="43" y1="25" x2="45" y2="29" stroke="#eee" stroke-width="1.5"/>
+<!-- eyes golden vertical pupil -->
+<ellipse cx="28" cy="13" rx="6" ry="6" fill="#ffcc00"/>
+<ellipse cx="44" cy="13" rx="6" ry="6" fill="#ffcc00"/>
+<ellipse cx="28" cy="13" rx="2.5" ry="4.5" fill="#180000"/>
+<ellipse cx="44" cy="13" rx="2.5" ry="4.5" fill="#180000"/>
+<circle cx="27" cy="11" r="1.5" fill="#ffee99" opacity=".7"/>
+<circle cx="43" cy="11" r="1.5" fill="#ffee99" opacity=".7"/>
+<!-- horns -->
+<path d="M24,7 Q19,-2 25,5" stroke="#7a1100" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+<path d="M48,7 Q53,-2 47,5" stroke="#7a1100" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+</svg>`;
+}
+
+function demonSVG(){
+  return `<svg viewBox="0 0 75 90" xmlns="http://www.w3.org/2000/svg" overflow="visible">
+<defs>
+  <radialGradient id="dmb" cx="50%" cy="40%"><stop offset="0%" stop-color="#280044"/><stop offset="100%" stop-color="#070010"/></radialGradient>
+  <radialGradient id="dma"><stop offset="0%" stop-color="#ff0066" stop-opacity=".8"/><stop offset="100%" stop-color="#8800ff" stop-opacity="0"/></radialGradient>
+  <filter id="dmf"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<ellipse cx="37" cy="84" rx="28" ry="9" fill="url(#dma)" filter="url(#dmf)"/>
+<!-- large bat wings -->
+<path d="M10,30 Q-18,4 -20,28 Q-16,54 8,52 Z" fill="#140028" stroke="#3a0055" stroke-width="1.5"/>
+<path d="M10,30 Q-7,12 -3,30 Q1,50 10,50 Z" fill="#280048"/>
+<line x1="-17" y1="9" x2="8" y2="47" stroke="#aa00ff" stroke-width=".9" opacity=".7"/>
+<line x1="-18" y1="22" x2="8" y2="50" stroke="#aa00ff" stroke-width=".9" opacity=".5"/>
+<line x1="-11" y1="4" x2="7" y2="44" stroke="#aa00ff" stroke-width=".9" opacity=".5"/>
+<path d="M-20,28 L-25,24 L-20,29" fill="#cc00ff"/>
+<path d="M-16,54 L-20,55 L-16,58" fill="#cc00ff"/>
+<path d="M65,30 Q93,4 95,28 Q91,54 67,52 Z" fill="#140028" stroke="#3a0055" stroke-width="1.5"/>
+<path d="M65,30 Q82,12 78,30 Q74,50 65,50 Z" fill="#280048"/>
+<line x1="92" y1="9" x2="67" y2="47" stroke="#aa00ff" stroke-width=".9" opacity=".7"/>
+<line x1="93" y1="22" x2="67" y2="50" stroke="#aa00ff" stroke-width=".9" opacity=".5"/>
+<path d="M95,28 L100,24 L95,29" fill="#cc00ff"/>
+<path d="M91,54 L95,55 L91,58" fill="#cc00ff"/>
+<!-- tail with flame blade -->
+<path d="M60,72 Q71,65 73,54 Q75,44 71,40" stroke="#280044" stroke-width="8" fill="none" stroke-linecap="round"/>
+<path d="M71,40 L67,30 L74,37 Z" fill="#ff00cc" filter="url(#dmf)"/>
+<!-- dark aura wisps -->
+<path d="M20,56 Q14,48 20,42 Q15,46 17,38" stroke="#8800ff" stroke-width="3" fill="none" opacity=".55" filter="url(#dmf)"/>
+<path d="M55,56 Q61,48 55,42 Q60,46 58,38" stroke="#8800ff" stroke-width="3" fill="none" opacity=".55" filter="url(#dmf)"/>
+<!-- body -->
+<rect x="14" y="38" width="47" height="38" rx="9" fill="url(#dmb)"/>
+<!-- chest sigil -->
+<path d="M37,48 L33,56 L37,52 L41,56 Z" fill="#ff00aa" opacity=".85" filter="url(#dmf)"/>
+<circle cx="37" cy="53" r="4.5" fill="none" stroke="#ff00aa" stroke-width="1.5" opacity=".8" filter="url(#dmf)"/>
+<!-- legs -->
+<rect x="19" y="70" width="13" height="17" rx="4" fill="#140028"/>
+<rect x="43" y="70" width="13" height="17" rx="4" fill="#140028"/>
+<path d="M17,85 L32,85 L30,90 L19,90 Z" fill="#220040"/>
+<path d="M43,85 L58,85 L56,90 L45,90 Z" fill="#220040"/>
+<!-- neck -->
+<rect x="28" y="21" width="19" height="19" rx="5" fill="url(#dmb)"/>
+<!-- head -->
+<ellipse cx="37" cy="17" rx="17" ry="16" fill="url(#dmb)"/>
+<!-- curved large horns -->
+<path d="M22,11 Q12,-2 19,7" stroke="#660000" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+<path d="M52,11 Q62,-2 55,7" stroke="#660000" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+<!-- glowing red eyes -->
+<ellipse cx="28" cy="15" rx="7" ry="7" fill="#cc0033" filter="url(#dmf)"/>
+<ellipse cx="46" cy="15" rx="7" ry="7" fill="#cc0033" filter="url(#dmf)"/>
+<ellipse cx="28" cy="15" rx="4.5" ry="5" fill="#ff0044"/>
+<ellipse cx="46" cy="15" rx="4.5" ry="5" fill="#ff0044"/>
+<ellipse cx="28" cy="15" rx="2" ry="3" fill="#1a0000"/>
+<ellipse cx="46" cy="15" rx="2" ry="3" fill="#1a0000"/>
+<!-- sharp teeth -->
+<path d="M23,25 Q37,33 51,25" stroke="#330018" stroke-width="2" fill="none"/>
+<line x1="27" y1="26" x2="25" y2="31" stroke="#ddd" stroke-width="2"/>
+<line x1="33" y1="28" x2="31" y2="33" stroke="#ddd" stroke-width="2"/>
+<line x1="41" y1="28" x2="41" y2="33" stroke="#ddd" stroke-width="2"/>
+<line x1="47" y1="26" x2="49" y2="31" stroke="#ddd" stroke-width="2"/>
+</svg>`;
+}
+
+const MON_SVG_FN = {imp:impSVG,golem:golemSVG,dragon:dragonSVG,demon:demonSVG};
+
+// ═══════════════════════════════════════════════
+// AUDIO
+// ═══════════════════════════════════════════════
+let _ac=null;
+function ac(){
+  if(!_ac) _ac=new(window.AudioContext||window.webkitAudioContext)();
+  if(_ac.state==='suspended') _ac.resume();
+  return _ac;
+}
+function tone(f,d,t='sine',v=0.3,a=0.01){
+  try{
+    const c=ac(),o=c.createOscillator(),g=c.createGain();
+    o.connect(g);g.connect(c.destination);
+    o.type=t;o.frequency.value=f;
+    g.gain.setValueAtTime(0,c.currentTime);
+    g.gain.linearRampToValueAtTime(v,c.currentTime+a);
+    g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+d);
+    o.start();o.stop(c.currentTime+d+0.05);
+  }catch(e){}
+}
+function sfx(n){
+  if(n==='correct'){tone(880,.1,'sine',.4);setTimeout(()=>tone(1320,.15,'sine',.3),80);}
+  else if(n==='wrong'){tone(180,.4,'sawtooth',.25);}
+  else if(n==='fail'){[440,370,310,250].forEach((f,i)=>setTimeout(()=>tone(f,.25,'sine',.3),i*130));}
+  else if(n==='win'){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,.3,'sine',.35),i*140));}
+  else if(n==='srank'){[523,659,784,1047,1319].forEach((f,i)=>setTimeout(()=>tone(f,.25,'sine',.45),i*95));
+    setTimeout(()=>{tone(784,.6,'sine',.4);tone(988,.6,'sine',.3);tone(1175,.6,'sine',.3)},520);}
+  else if(n==='frag'){tone(1047,.09,'sine',.12);}
+  else if(n==='key'){tone(660,.055,'sine',.08);}
+  else if(n==='beep'){tone(440,.08,'square',.08);}
+}
+
+// ═══════════════════════════════════════════════
+// STAR CANVAS
+// ═══════════════════════════════════════════════
+function initStars(){
+  const cv=document.getElementById('starCanvas');
+  const ctx=cv.getContext('2d');
+  let W=cv.width=window.innerWidth, H=cv.height=window.innerHeight;
+  const stars=Array.from({length:220},()=>({
+    x:Math.random()*W, y:Math.random()*H,
+    r:Math.random()*1.8+0.3,
+    t:Math.random()*Math.PI*2, s:0.0015+Math.random()*0.003
+  }));
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    for(const s of stars){
+      s.t+=s.s;
+      const a=0.35+0.65*Math.abs(Math.sin(s.t));
+      ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(255,255,255,${a.toFixed(2)})`;ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+  window.addEventListener('resize',()=>{W=cv.width=window.innerWidth;H=cv.height=window.innerHeight;});
+}
+
+// ═══════════════════════════════════════════════
+// FIRE PARTICLES
+// ═══════════════════════════════════════════════
+function initFire(){
+  const c=document.getElementById('fireParticles');
+  c.innerHTML='';
+  const cls=['#ff2200','#ff5500','#ff8800','#ffbb00','#ff3322'];
+  for(let i=0;i<28;i++){
+    const d=document.createElement('div');
+    d.className='spark';
+    const w=2+Math.random()*4, h=4+Math.random()*9;
+    d.style.cssText=`left:${Math.random()*100}%;bottom:${Math.random()*12}%;`+
+      `width:${w}px;height:${h}px;background:${cls[i%cls.length]};`+
+      `--dx:${(Math.random()-.5)*90}px;`+
+      `animation-duration:${1.4+Math.random()*3}s;animation-delay:${Math.random()*3}s`;
+    c.appendChild(d);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// QUESTION GENERATION
+// ═══════════════════════════════════════════════
+function r(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function genQ(id){
+  let a,b,ans,text;
+  switch(id){
+    case'1.1.1':a=r(1,9);b=r(1,9);ans=a+b;text=`${a} ＋ ${b} = ?`;break;
+    case'1.1.2':a=r(10,99);b=r(1,9);ans=a+b;text=`${a} ＋ ${b} = ?`;break;
+    case'1.1.3':a=r(10,99);b=r(10,99);ans=a+b;text=`${a} ＋ ${b} = ?`;break;
+    case'1.1.4':a=r(100,999);b=r(10,99);ans=a+b;text=`${a} ＋ ${b} = ?`;break;
+    case'1.1.5':a=r(100,999);b=r(100,999);ans=a+b;text=`${a} ＋ ${b} = ?`;break;
+    case'1.2.1':b=r(1,9);a=r(b,9);ans=a-b;text=`${a} － ${b} = ?`;break;
+    case'1.2.2':b=r(1,9);a=r(Math.max(10,b+1),99);ans=a-b;text=`${a} － ${b} = ?`;break;
+    case'1.2.3':b=r(10,49);a=r(b+1,99);ans=a-b;text=`${a} － ${b} = ?`;break;
+    case'1.2.4':b=r(10,99);a=r(100,999);ans=a-b;text=`${a} － ${b} = ?`;break;
+    case'1.2.5':b=r(100,499);a=r(b+1,999);ans=a-b;text=`${a} － ${b} = ?`;break;
+    case'1.3.1':a=r(1,9);b=r(1,9);ans=a*b;text=`${a} × ${b} = ?`;break;
+    case'1.3.2':a=r(10,99);b=r(2,9);ans=a*b;text=`${a} × ${b} = ?`;break;
+    case'1.3.3':a=r(10,99);b=r(10,99);ans=a*b;text=`${a} × ${b} = ?`;break;
+    case'1.3.4':a=r(100,999);b=r(2,9);ans=a*b;text=`${a} × ${b} = ?`;break;
+    case'1.4.1':b=r(1,9);a=b*r(1,9);ans=a/b;text=`${a} ÷ ${b} = ?`;break;
+    case'1.4.2':{b=r(2,9);let m=r(2,11);a=b*m;let tries=0;while((a<10||a>99)&&tries++<20){m=r(2,11);a=b*m;}ans=a/b;text=`${a} ÷ ${b} = ?`;}break;
+    case'1.4.3':{b=r(11,19);let m=r(2,5);a=b*m;let tries=0;while((a<10||a>99)&&tries++<20){m=r(2,5);a=b*m;}ans=a/b;text=`${a} ÷ ${b} = ?`;}break;
+    case'1.4.4':{b=r(2,9);let m=r(12,111);a=b*m;let tries=0;while((a<100||a>999)&&tries++<20){m=r(12,111);a=b*m;}ans=a/b;text=`${a} ÷ ${b} = ?`;}break;
+    default:a=r(1,9);b=r(1,9);ans=a+b;text=`${a} ＋ ${b} = ?`;
+  }
+  return {text,ans};
+}
+
+// ═══════════════════════════════════════════════
+// SCORE CALC
+// ═══════════════════════════════════════════════
+function calcPts(id,secs,wrongs){
+  const {sc,df}=LEVELS[id];
+  let base=df;
+  for(const[lim,pts] of sc){if(secs<=lim){base=pts;break;}}
+  return Math.max(base-wrongs*50,0);
+}
+function gradeV(g){return{S:4,A:3,B:2,C:1}[g]||0;}
+
+// ═══════════════════════════════════════════════
+// GAME STATE
+// ═══════════════════════════════════════════════
+let curId=null;
+let GS={};
+
+function startLevel(id){
+  curId=id;
+  const lv=LEVELS[id];
+  GS={
+    heroHp:3, monHp:10, score:0,
+    qIdx:0, wrongCount:0, ans:'',
+    qs:Array.from({length:10},()=>genQ(id)),
+    totalQ:10, qStartT:0,
+    lvTimeLeft:lv.time,
+    lvTimerId:null, qTimerId:null,
+    wrongThisQ:0, totalCorrect:0, starsEarned:0,
+  };
+  // Intro
+  document.getElementById('introTag').textContent=`關卡 ${id} — ${lv.name}`;
+  document.getElementById('introMonName').textContent=lv.mnm;
+  goTo('s-intro');
+  runCountdown(['3','2','1','GO!'],()=>{
+    goTo('s-game');
+    setupGame();
+    initFire();
+    startLvTimer();
+    nextQ();
+  });
+}
+
+function runCountdown(steps,done){
+  const el=document.getElementById('cdNum');
+  let i=0;
+  function tick(){
+    if(i>=steps.length){done();return;}
+    el.textContent=steps[i++];
+    el.classList.remove('pop');
+    requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('pop')));
+    setTimeout(tick,900);
+  }
+  tick();
+}
+
+function setupGame(){
+  const lv=LEVELS[curId];
+  document.getElementById('hudTag').textContent=`${curId} ${lv.name}`;
+  document.getElementById('monLabel').textContent=lv.mnm;
+  const hs=document.getElementById('heroSprite');
+  hs.innerHTML=heroSVG(3);
+  hs.dataset.char='hero';
+  const ms=document.getElementById('monSprite');
+  ms.innerHTML=MON_SVG_FN[lv.mon]();
+  ms.dataset.char=lv.mon;
+  updateHUD();
+}
+
+function updateHUD(){
+  const g=GS;
+  document.getElementById('heartsRow').textContent='❤️'.repeat(Math.max(0,g.heroHp))+'🖤'.repeat(Math.max(0,3-g.heroHp));
+  const td=document.getElementById('timerBig');
+  td.textContent=g.lvTimeLeft;
+  td.className='timer-big'+(g.lvTimeLeft<=30?' danger':'');
+  document.getElementById('hudQInfo').textContent=`第 ${g.qIdx+1} / ${g.totalQ} 題`;
+  document.getElementById('monHpFill').style.width=(g.monHp/g.totalQ*100)+'%';
+  document.getElementById('monHpTxt').textContent=`${g.monHp}/${g.totalQ}`;
+  document.getElementById('scoreDisp').textContent=`${g.score}分`;
+  // refresh hero (HP colour changes)
+  const hs=document.getElementById('heroSprite');
+  hs.innerHTML=heroSVG(g.heroHp);
+}
+
+function startLvTimer(){
+  GS.lvTimerId=setInterval(()=>{
+    GS.lvTimeLeft--;
+    const td=document.getElementById('timerBig');
+    td.textContent=GS.lvTimeLeft;
+    td.className='timer-big'+(GS.lvTimeLeft<=30?' danger':'');
+    if(GS.lvTimeLeft<=30) sfx('beep');
+    if(GS.lvTimeLeft<=0){clearTimers();endGame('timeout');}
+  },1000);
+}
+
+function clearTimers(){
+  clearInterval(GS.lvTimerId);
+  clearInterval(GS.qTimerId);
+  GS.lvTimerId=GS.qTimerId=null;
+}
+
+function nextQ(){
+  if(GS.qIdx>=GS.totalQ){clearTimers();endGame('win');return;}
+  const q=GS.qs[GS.qIdx];
+  GS.ans='';
+  GS.wrongThisQ=0;
+  GS.qStartT=Date.now();
+  document.getElementById('qDisplay').textContent=q.text;
+  document.getElementById('ansDisplay').textContent='_';
+  document.getElementById('wrongRow').textContent='○○○';
+  // per-question timer bar
+  clearInterval(GS.qTimerId);
+  const maxSecs=LEVELS[curId].sc[LEVELS[curId].sc.length-1][0]+8;
+  GS.qTimerId=setInterval(()=>{
+    const el=(Date.now()-GS.qStartT)/1000;
+    document.getElementById('qBar').style.width=Math.max(0,100-el/maxSecs*100)+'%';
+  },100);
+}
+
+function submit(){
+  const num=parseInt(GS.ans,10);
+  if(isNaN(num)||GS.ans==='') return;
+  const q=GS.qs[GS.qIdx];
+  const secs=(Date.now()-GS.qStartT)/1000;
+  if(num===q.ans){
+    sfx('correct');
+    const pts=calcPts(curId,secs,GS.wrongThisQ);
+    GS.score+=pts;
+    GS.starsEarned++;
+    GS.totalCorrect++;
+    GS.monHp--;
+    clearInterval(GS.qTimerId);
+    doCorrectAnim(()=>{
+      GS.qIdx++;
+      updateHUD();
+      if(GS.monHp<=0){clearTimers();endGame('win');}
+      else nextQ();
+    });
+  } else {
+    sfx('wrong');
+    GS.wrongThisQ++;
+    GS.score=Math.max(GS.score-50,-999);
+    if(GS.wrongThisQ>=3){
+      GS.heroHp--;
+      updateHUD();
+      clearInterval(GS.qTimerId);
+      if(GS.heroHp<=0){
+        doWrongAnim(()=>{clearTimers();endGame('fail');});
+      } else {
+        doWrongAnim(()=>{
+          GS.qIdx++;
+          updateHUD();
+          if(GS.qIdx>=GS.totalQ){clearTimers();endGame('win');}
+          else nextQ();
+        });
+      }
+    } else {
+      doWrongAnim(()=>{
+        GS.ans='';
+        document.getElementById('ansDisplay').textContent='_';
+        document.getElementById('wrongRow').textContent=
+          '✗'.repeat(GS.wrongThisQ)+'○'.repeat(3-GS.wrongThisQ);
+      });
+    }
+  }
+}
+
+function doCorrectAnim(cb){
+  const hs=document.getElementById('heroSprite');
+  const ms=document.getElementById('monSprite');
+  const fo=document.getElementById('sfo');
+  hs.classList.add('anim-hero-atk');
+  setTimeout(()=>{
+    hs.classList.remove('anim-hero-atk');
+    ms.classList.add('anim-flash-hit','anim-shake');
+    fo.className='screen-flash-overlay sfo-yellow';
+    setTimeout(()=>{ms.classList.remove('anim-flash-hit','anim-shake');fo.className='screen-flash-overlay';cb();},320);
+  },250);
+}
+
+function doWrongAnim(cb){
+  const hs=document.getElementById('heroSprite');
+  const ms=document.getElementById('monSprite');
+  const fo=document.getElementById('sfo');
+  ms.classList.add('anim-mon-atk');
+  setTimeout(()=>{
+    ms.classList.remove('anim-mon-atk');
+    hs.classList.add('anim-flash-hurt','anim-shake');
+    fo.className='screen-flash-overlay sfo-red';
+    setTimeout(()=>{hs.classList.remove('anim-flash-hurt','anim-shake');fo.className='screen-flash-overlay';cb();},320);
+  },250);
+}
+
+// ═══════════════════════════════════════════════
+// END GAME
+// ═══════════════════════════════════════════════
+function endGame(result){
+  clearTimers();
+  SS.addStars(GS.starsEarned);
+
+  if(result==='win'){
+    const lv=LEVELS[curId];
+    let grade='C';
+    if(GS.score>=lv.S) grade='S';
+    else if(GS.score>=lv.A) grade='A';
+    else if(GS.score>=lv.B) grade='B';
+
+    const bonusMap={S:100,A:50,B:30,C:10};
+    const bonus=bonusMap[grade];
+    SS.addStars(bonus);
+    if(grade==='S') sfx('srank'); else sfx('win');
+
+    let gotTreasure=false;
+    if(grade==='S'&&!SS.hasTr(curId)){SS.addTr(curId);gotTreasure=true;}
+
+    const prev=SS.lv(curId)||{};
+    SS.saveLv(curId,{
+      score:Math.max(GS.score,prev.score||0),
+      grade:gradeV(grade)>=gradeV(prev.grade||'') ? grade : prev.grade,
+      treasure:gotTreasure||prev.treasure||false,
+    });
+
+    goTo('s-win');
+    const gEl=document.getElementById('winGrade');
+    gEl.textContent=grade;
+    gEl.className='grade-big gb-'+grade;
+    document.getElementById('winScore').textContent=`得分：${GS.score}`;
+    document.getElementById('winStars').textContent=`⭐ 獲得 ${GS.starsEarned+bonus} 顆星星碎片`;
+    document.getElementById('winAcc').textContent=`答對 ${GS.totalCorrect}/10 題 | 正確率 ${GS.totalCorrect*10}%`;
+    const tb=document.getElementById('treasureBox');
+    if(gotTreasure){
+      tb.style.display='block';
+      document.getElementById('treasureBigIcon').textContent=lv.tr.i;
+      document.getElementById('treasureGotName').textContent=`🎉 首次獲得寶物：${lv.tr.n}！`;
+    } else tb.style.display='none';
+
+  } else {
+    sfx('fail');
+    goTo('s-lose');
+    document.getElementById('loseMsg').textContent=FAIL_MSGS[Math.floor(Math.random()*FAIL_MSGS.length)];
+    document.getElementById('loseStats').textContent=`已答對 ${GS.totalCorrect} 題 | 獲得 ${GS.starsEarned} 顆星星碎片`;
+  }
+}
+
+function retryLevel(){if(curId) startLevel(curId);}
+
+// ═══════════════════════════════════════════════
+// SCREEN NAV
+// ═══════════════════════════════════════════════
+function goTo(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='s-world') renderWorld();
+  if(id==='s-collection') renderCollection();
+}
+
+function openCollection(){goTo('s-collection');}
+
+// ═══════════════════════════════════════════════
+// WORLD MAP
+// ═══════════════════════════════════════════════
+function renderWorld(){
+  const g=document.getElementById('opsGrid');
+  g.innerHTML='';
+  for(const op of OPS){
+    const done=op.ids.filter(id=>SS.lv(id)).length;
+    const el=document.createElement('div');
+    el.className='op-card';
+    el.innerHTML=`<div class="op-icon">${op.icon}</div>
+<div class="op-name">${op.name}</div>
+<div class="op-count">${done}/${op.ids.length} 關完成</div>
+<div class="op-progress-wrap"><div class="op-progress-bar" style="width:${done/op.ids.length*100}%"></div></div>`;
+    el.onclick=()=>renderLevelSelect(op);
+    g.appendChild(el);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// LEVEL SELECT
+// ═══════════════════════════════════════════════
+const MON_ICON={imp:'😈',golem:'🪨',dragon:'🐉',demon:'👹'};
+function renderLevelSelect(op){
+  document.getElementById('lvlSelTitle').textContent=op.name+' 關卡';
+  const list=document.getElementById('levelsList');
+  list.innerHTML='';
+  for(const id of op.ids){
+    const lv=LEVELS[id], saved=SS.lv(id), locked=!SS.unlocked(id);
+    const card=document.createElement('div');
+    card.className='level-card'+(locked?' locked':'');
+    let grHtml='', scHtml='', trHtml='';
+    if(saved?.grade) grHtml=`<span class="grade-chip g-${saved.grade}">${saved.grade}</span>`;
+    if(saved?.score!=null) scHtml=`<span class="level-score">最高 ${saved.score} 分</span>`;
+    if(saved?.treasure) trHtml=`<span style="font-size:16px">${lv.tr.i}</span>`;
+    card.innerHTML=`
+<div class="level-icon">${MON_ICON[lv.mon]}</div>
+<div class="level-info">
+  <div class="level-name">${id}　${lv.name}</div>
+  <div class="level-meta">時限 ${lv.time}s｜${lv.mnm}</div>
+  <div class="level-rec">${grHtml}${scHtml}${trHtml}</div>
+</div>${locked?'<div class="lock-icon">🔒</div>':''}`;
+    if(!locked) card.onclick=()=>startLevel(id);
+    list.appendChild(card);
+  }
+  goTo('s-levels');
+}
+
+// ═══════════════════════════════════════════════
+// COLLECTION
+// ═══════════════════════════════════════════════
+function renderCollection(){
+  document.getElementById('starsTotalRow').textContent=`⭐ 星星碎片：${SS.stars()}`;
+  const g=document.getElementById('treasuresGrid');
+  g.innerHTML='';
+  for(const[id,lv] of Object.entries(LEVELS)){
+    const has=SS.hasTr(id);
+    const s=document.createElement('div');
+    s.className='t-slot'+(has?' earned':' locked-t');
+    s.innerHTML=has
+      ?`<div class="tsi">${lv.tr.i}</div><div class="tsn">${lv.tr.n}</div><div class="tsf">關卡 ${id}</div>`
+      :`<div class="tsi">❓</div><div class="tsf">關卡 ${id}</div>`;
+    g.appendChild(s);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// INPUT
+// ═══════════════════════════════════════════════
+function handleInput(v){
+  if(v==='C'){GS.ans='';document.getElementById('ansDisplay').textContent='_';}
+  else if(v==='OK'){submit();}
+  else{
+    sfx('key');
+    if(GS.ans.length<6){GS.ans+=v;document.getElementById('ansDisplay').textContent=GS.ans;}
+  }
+}
+
+document.querySelectorAll('.nbtn').forEach(b=>{
+  b.addEventListener('pointerdown',e=>{e.preventDefault();handleInput(b.dataset.v);});
+});
+
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('s-game').classList.contains('active')){
+    if('0123456789'.includes(e.key)) handleInput(e.key);
+    else if(e.key==='Enter') handleInput('OK');
+    else if(e.key==='Backspace'){
+      e.preventDefault();
+      GS.ans=GS.ans.slice(0,-1);
+      document.getElementById('ansDisplay').textContent=GS.ans||'_';
+    }
+    else if(e.key==='Escape') handleInput('C');
+  }
+});
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded',()=>{
+  initStars();
+  const th=document.getElementById('titleHeroWrap');
+  th.innerHTML=heroSVG(3);
+  renderWorld();
+});
+</script>
+</body>
+</html>
