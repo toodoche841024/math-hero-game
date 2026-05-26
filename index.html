@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>星界召喚師 — 數學奇航</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{width:100%;height:100%;overflow:hidden;background:#000;
@@ -376,11 +377,86 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 .t-slot .tsn{font-size:10px;color:#ffd700;font-weight:700;line-height:1.3}
 .t-slot .tsf{font-size:9px;color:#666}
 .t-slot.locked-t .tsi{opacity:0.18;filter:grayscale(1)}
+
+/* ── Auth Screen ── */
+#s-auth{background:radial-gradient(ellipse at 50% 30%,#0d0d2e 0%,#000010 100%);
+  justify-content:center;align-items:center}
+.auth-content{position:relative;z-index:1;display:flex;flex-direction:column;
+  align-items:center;gap:18px;padding:24px;width:100%;max-width:420px;text-align:center}
+.auth-card{background:rgba(8,8,40,0.88);border:1px solid rgba(0,212,255,0.25);
+  border-radius:20px;padding:28px 24px;width:100%;
+  box-shadow:0 0 40px rgba(0,100,255,0.15)}
+.auth-tabs{display:flex;margin-bottom:22px;border-radius:10px;
+  overflow:hidden;border:1px solid rgba(0,212,255,0.2)}
+.auth-tab{flex:1;padding:11px;background:transparent;border:none;
+  color:#6677aa;font-size:15px;font-weight:700;cursor:pointer;
+  font-family:'Noto Sans TC',sans-serif;transition:all 0.2s;letter-spacing:2px}
+.auth-tab.active{background:rgba(0,212,255,0.15);color:#00d4ff}
+.auth-fields{display:flex;flex-direction:column;gap:14px;text-align:left}
+.auth-field-group{display:flex;flex-direction:column;gap:6px}
+.auth-label{font-size:12px;color:#8899cc;letter-spacing:1px}
+.auth-input{background:rgba(255,255,255,0.06);border:1px solid rgba(100,100,200,0.35);
+  border-radius:10px;padding:12px 14px;color:#fff;font-size:15px;outline:none;
+  font-family:'Noto Sans TC',sans-serif;transition:border-color 0.2s;width:100%;
+  box-sizing:border-box}
+.auth-input:focus{border-color:#00d4ff;background:rgba(0,212,255,0.05)}
+.auth-input::placeholder{color:#334}
+.auth-error{min-height:18px;font-size:13px;color:#ff6666;text-align:center;margin-top:-4px}
+.btn-auth{background:linear-gradient(135deg,#00d4ff,#0055cc);color:#fff;
+  font-family:'Noto Sans TC',sans-serif;font-size:17px;font-weight:700;
+  padding:14px;border:none;border-radius:12px;cursor:pointer;width:100%;
+  letter-spacing:2px;transition:all 0.2s;margin-top:4px;
+  box-shadow:0 0 20px rgba(0,212,255,0.3)}
+.btn-auth:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,212,255,0.5)}
+.auth-tagline{color:#445577;font-size:12px;letter-spacing:2px}
+
+/* ── User Bar ── */
+.user-bar{position:absolute;top:0;right:0;display:flex;align-items:center;
+  gap:8px;padding:6px 12px;z-index:20;
+  background:rgba(0,0,0,0.45);border-bottom-left-radius:10px}
+.user-display{font-size:11px;color:#ffd700;font-family:'Orbitron',sans-serif;letter-spacing:1px}
+.btn-signout{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);
+  color:#aabbcc;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;
+  font-family:'Noto Sans TC',sans-serif;transition:all 0.2s}
+.btn-signout:hover{background:rgba(255,255,255,0.2);color:#fff}
 </style>
 </head>
 <body>
 
 <canvas id="starCanvas"></canvas>
+
+<!-- ── Auth Screen ── -->
+<div id="s-auth" class="screen active">
+  <div class="auth-content">
+    <div>
+      <div class="logo-main">星界召喚師</div>
+      <div class="logo-sub">數學奇航</div>
+    </div>
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button id="tab-signin" class="auth-tab active" onclick="switchAuthTab('signin')">登入</button>
+        <button id="tab-signup" class="auth-tab" onclick="switchAuthTab('signup')">註冊</button>
+      </div>
+      <div class="auth-fields">
+        <div class="auth-field-group">
+          <label class="auth-label">電子信箱</label>
+          <input id="auth-email" class="auth-input" type="email" placeholder="your@email.com" autocomplete="email">
+        </div>
+        <div class="auth-field-group">
+          <label class="auth-label">密碼</label>
+          <input id="auth-password" class="auth-input" type="password" placeholder="至少 6 個字元" autocomplete="current-password">
+        </div>
+        <div id="auth-name-group" class="auth-field-group" style="display:none">
+          <label class="auth-label">顯示名稱</label>
+          <input id="auth-name" class="auth-input" type="text" placeholder="你的名字">
+        </div>
+        <div id="auth-error" class="auth-error"></div>
+        <button id="auth-submit" class="btn-auth" onclick="authSignIn()">登入</button>
+      </div>
+    </div>
+    <div class="auth-tagline">用數學之力召喚守護神！</div>
+  </div>
+</div>
 
 <!-- Pause Modal -->
 <div class="pause-overlay" id="pauseOverlay">
@@ -395,7 +471,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 </div>
 
 <!-- ── S1: Title ── -->
-<div id="s-title" class="screen active">
+<div id="s-title" class="screen">
+  <div class="user-bar">
+    <span class="user-display"></span>
+    <button onclick="authSignOut()" class="btn-signout">登出</button>
+  </div>
   <div class="title-content">
     <div>
       <div class="logo-main">星界召喚師</div>
@@ -409,6 +489,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 
 <!-- ── S2: Planet Select ── -->
 <div id="s-planet" class="screen">
+  <div class="user-bar">
+    <span class="user-display"></span>
+    <button onclick="authSignOut()" class="btn-signout">登出</button>
+  </div>
   <button class="back-btn" onclick="goTo('s-title')">← 返回</button>
   <div id="planetStarsDisplay" style="position:absolute;top:14px;right:14px;
     font-family:'Orbitron',sans-serif;font-size:13px;color:#ffd700;
@@ -430,6 +514,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 
 <!-- ── S3: World Map ── -->
 <div id="s-world" class="screen">
+  <div class="user-bar">
+    <span class="user-display"></span>
+    <button onclick="authSignOut()" class="btn-signout">登出</button>
+  </div>
   <button class="back-btn" onclick="goTo('s-planet')">← 返回</button>
   <div class="screen-big-title">燃燒星</div>
   <div class="ops-grid" id="opsGrid"></div>
@@ -437,6 +525,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 
 <!-- ── S4: Level Select ── -->
 <div id="s-levels" class="screen">
+  <div class="user-bar">
+    <span class="user-display"></span>
+    <button onclick="authSignOut()" class="btn-signout">登出</button>
+  </div>
   <div class="lvl-header">
     <button class="lvl-back-btn" onclick="goTo('s-world')">←</button>
     <h2 id="lvlSelTitle"></h2>
@@ -592,6 +684,256 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 </div>
 
 <script>
+// ═══════════════════════════════════════════════
+// Supabase 初始化
+// ═══════════════════════════════════════════════
+const SUPA_URL = 'https://ryfzqrhvdlpajtfakmct.supabase.co';
+const SUPA_KEY = 'sb_publishable_UygNpxsLPOd7m_qQpgci3Q_OzE8F_WB';
+const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+
+let currentUser = null;
+let currentPlayer = null;
+let currentChild = null;
+
+// ═══════════════════════════════════════════════
+// 帳號系統
+// ═══════════════════════════════════════════════
+
+async function initAuth() {
+  const { data: { session } } = await db.auth.getSession();
+  if (session) {
+    currentUser = session.user;
+    await loadPlayerData();
+    await loadOrCreateChild();
+    await syncFromCloud();
+    goTo('s-title');
+  } else {
+    goTo('s-auth');
+  }
+}
+
+async function loadPlayerData() {
+  const { data } = await db
+    .from('players')
+    .select('*')
+    .eq('id', currentUser.id)
+    .single();
+  currentPlayer = data;
+  updateUserDisplay();
+}
+
+async function loadOrCreateChild() {
+  const { data: kids } = await db
+    .from('children')
+    .select('*')
+    .eq('parent_id', currentUser.id)
+    .limit(1);
+
+  if (kids && kids.length > 0) {
+    currentChild = kids[0];
+  } else {
+    const { data: newKid } = await db
+      .from('children')
+      .insert({
+        parent_id: currentUser.id,
+        name: currentPlayer ? currentPlayer.display_name : '玩家',
+        avatar: '⚔️'
+      })
+      .select()
+      .single();
+    currentChild = newKid;
+  }
+}
+
+function updateUserDisplay() {
+  document.querySelectorAll('.user-display').forEach(el => {
+    if (currentPlayer) {
+      el.textContent = `⭐ ${currentPlayer.display_name}`;
+    }
+  });
+}
+
+async function authSignUp() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const name = document.getElementById('auth-name').value.trim();
+
+  if (!email || !password || !name) { showAuthError('請填寫所有欄位'); return; }
+  if (password.length < 6) { showAuthError('密碼至少需要 6 個字元'); return; }
+
+  showAuthError('');
+  const btn = document.getElementById('auth-submit');
+  btn.textContent = '處理中...';
+  btn.disabled = true;
+
+  const { data, error } = await db.auth.signUp({ email, password });
+
+  if (error) {
+    showAuthError(translateError(error.message));
+    btn.textContent = '註冊'; btn.disabled = false;
+    return;
+  }
+
+  await db.from('players').insert({
+    id: data.user.id,
+    email: email,
+    display_name: name
+  });
+
+  currentUser = data.user;
+  await loadPlayerData();
+  await loadOrCreateChild();
+  await syncFromLocal();
+  goTo('s-title');
+}
+
+async function authSignIn() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+
+  if (!email || !password) { showAuthError('請填寫 Email 和密碼'); return; }
+
+  showAuthError('');
+  const btn = document.getElementById('auth-submit');
+  btn.textContent = '處理中...';
+  btn.disabled = true;
+
+  const { data, error } = await db.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    showAuthError(translateError(error.message));
+    btn.textContent = '登入'; btn.disabled = false;
+    return;
+  }
+
+  currentUser = data.user;
+  await loadPlayerData();
+  await loadOrCreateChild();
+  await syncFromCloud();
+  goTo('s-title');
+}
+
+async function authSignOut() {
+  await db.auth.signOut();
+  currentUser = null;
+  currentPlayer = null;
+  currentChild = null;
+  goTo('s-auth');
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  if (el) el.textContent = msg;
+}
+
+function translateError(msg) {
+  if (msg.includes('Invalid login credentials')) return '信箱或密碼錯誤';
+  if (msg.includes('Email already registered')) return '此信箱已被註冊';
+  if (msg.includes('User already registered')) return '此信箱已被註冊';
+  if (msg.includes('Password should be at least')) return '密碼至少需要 6 個字元';
+  if (msg.includes('Unable to validate email')) return '信箱格式不正確';
+  return '發生錯誤，請稍後再試';
+}
+
+// ═══════════════════════════════════════════════
+// 登入/註冊 Tab 切換
+// ═══════════════════════════════════════════════
+let authMode = 'signin';
+
+function switchAuthTab(mode) {
+  authMode = mode;
+  document.getElementById('auth-name-group').style.display =
+    mode === 'signup' ? 'block' : 'none';
+  document.getElementById('tab-signin').className =
+    mode === 'signin' ? 'auth-tab active' : 'auth-tab';
+  document.getElementById('tab-signup').className =
+    mode === 'signup' ? 'auth-tab active' : 'auth-tab';
+  const btn = document.getElementById('auth-submit');
+  btn.textContent = mode === 'signin' ? '登入' : '註冊';
+  btn.onclick = mode === 'signin' ? authSignIn : authSignUp;
+  btn.disabled = false;
+  showAuthError('');
+}
+
+// ═══════════════════════════════════════════════
+// 進度雲端同步
+// ═══════════════════════════════════════════════
+
+async function syncFromLocal() {
+  if (!currentChild) return;
+  const stars = parseInt(localStorage.getItem('mc_stars') || '0');
+
+  for (let i = 1; i <= 18; i++) {
+    const raw = localStorage.getItem('mc_lv_' + i);
+    if (!raw) continue;
+    try {
+      const d = JSON.parse(raw);
+      await db.from('level_progress').upsert({
+        child_id: currentChild.id,
+        level_id: i,
+        best_score: d.score || 0,
+        best_grade: d.grade || '',
+        has_treasure: d.treasure || false,
+        star_fragments: d.score || 0
+      }, { onConflict: 'child_id,level_id' });
+    } catch(e) {}
+  }
+
+  await db.from('child_stats').upsert({
+    child_id: currentChild.id,
+    total_fragments: stars
+  }, { onConflict: 'child_id' });
+}
+
+async function syncFromCloud() {
+  if (!currentChild) return;
+
+  const { data: levels } = await db
+    .from('level_progress')
+    .select('*')
+    .eq('child_id', currentChild.id);
+
+  if (levels && levels.length > 0) {
+    levels.forEach(row => {
+      localStorage.setItem('mc_lv_' + row.level_id, JSON.stringify({
+        score: row.best_score,
+        grade: row.best_grade,
+        treasure: row.has_treasure
+      }));
+    });
+  }
+
+  const { data: stats } = await db
+    .from('child_stats')
+    .select('total_fragments')
+    .eq('child_id', currentChild.id)
+    .single();
+
+  if (stats) {
+    localStorage.setItem('mc_stars', String(stats.total_fragments));
+  }
+}
+
+async function saveProgressToCloud(level, score, grade, treasure) {
+  if (!currentChild) return;
+  try {
+    await db.from('level_progress').upsert({
+      child_id: currentChild.id,
+      level_id: level,
+      best_score: score,
+      best_grade: grade,
+      has_treasure: treasure,
+      star_fragments: score
+    }, { onConflict: 'child_id,level_id' });
+
+    const stars = parseInt(localStorage.getItem('mc_stars') || '0');
+    await db.from('child_stats').upsert({
+      child_id: currentChild.id,
+      total_fragments: stars
+    }, { onConflict: 'child_id' });
+  } catch(e) {}
+}
+
 // ═══════════════════════════════════════════════
 // DATA
 // ═══════════════════════════════════════════════
@@ -1239,11 +1581,15 @@ function endGame(result){
     if(grade==='S'&&!SS.hasTr(curId)){SS.addTr(curId);gotTreasure=true;}
 
     const prev=SS.lv(curId)||{};
+    const savedScore=Math.max(GS.score,prev.score||0);
+    const savedGrade=gradeV(grade)>=gradeV(prev.grade||'') ? grade : prev.grade;
+    const savedTreasure=gotTreasure||prev.treasure||false;
     SS.saveLv(curId,{
-      score:Math.max(GS.score,prev.score||0),
-      grade:gradeV(grade)>=gradeV(prev.grade||'') ? grade : prev.grade,
-      treasure:gotTreasure||prev.treasure||false,
+      score:savedScore,
+      grade:savedGrade,
+      treasure:savedTreasure,
     });
+    saveProgressToCloud(parseInt(curId), savedScore, savedGrade, savedTreasure);
 
     const showWinScreen=()=>{
     goTo('s-win');
@@ -1510,6 +1856,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   th.innerHTML=heroSVG(3);
   renderWorld();
   refreshStarsDisplay();
+  initAuth();
 });
 </script>
 </body>
