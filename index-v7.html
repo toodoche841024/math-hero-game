@@ -693,6 +693,7 @@ const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 
 let currentUser = null;
 let currentPlayer = null;
+let currentChild = null;
 
 // ═══════════════════════════════════════════════
 // 帳號系統
@@ -703,6 +704,8 @@ async function initAuth() {
   if (session) {
     currentUser = session.user;
     await loadPlayerData();
+    await loadOrCreateChild();
+    await syncFromCloud();
     goTo('s-title');
   } else {
     goTo('s-auth');
@@ -717,6 +720,29 @@ async function loadPlayerData() {
     .single();
   currentPlayer = data;
   updateUserDisplay();
+}
+
+async function loadOrCreateChild() {
+  const { data: kids } = await db
+    .from('children')
+    .select('*')
+    .eq('parent_id', currentUser.id)
+    .limit(1);
+
+  if (kids && kids.length > 0) {
+    currentChild = kids[0];
+  } else {
+    const { data: newKid } = await db
+      .from('children')
+      .insert({
+        parent_id: currentUser.id,
+        name: currentPlayer ? currentPlayer.display_name : '玩家',
+        avatar: '⚔️'
+      })
+      .select()
+      .single();
+    currentChild = newKid;
+  }
 }
 
 function updateUserDisplay() {
@@ -756,6 +782,7 @@ async function authSignUp() {
 
   currentUser = data.user;
   await loadPlayerData();
+  await loadOrCreateChild();
   await syncFromLocal();
   goTo('s-title');
 }
@@ -781,6 +808,7 @@ async function authSignIn() {
 
   currentUser = data.user;
   await loadPlayerData();
+  await loadOrCreateChild();
   await syncFromCloud();
   goTo('s-title');
 }
@@ -789,6 +817,7 @@ async function authSignOut() {
   await db.auth.signOut();
   currentUser = null;
   currentPlayer = null;
+  currentChild = null;
   goTo('s-auth');
 }
 
@@ -831,7 +860,7 @@ function switchAuthTab(mode) {
 // ═══════════════════════════════════════════════
 
 async function syncFromLocal() {
-  if (!currentUser) return;
+  if (!currentChild) return;
   const stars = parseInt(localStorage.getItem('mc_stars') || '0');
 
   for (let i = 1; i <= 18; i++) {
@@ -840,66 +869,68 @@ async function syncFromLocal() {
     try {
       const d = JSON.parse(raw);
       await db.from('level_progress').upsert({
-        player_id: currentUser.id,
-        level: i,
-        score: d.score || 0,
-        grade: d.grade || '',
-        treasure: d.treasure || false
-      }, { onConflict: 'player_id,level' });
+        child_id: currentChild.id,
+        level_id: i,
+        best_score: d.score || 0,
+        best_grade: d.grade || '',
+        has_treasure: d.treasure || false,
+        star_fragments: d.score || 0
+      }, { onConflict: 'child_id,level_id' });
     } catch(e) {}
   }
 
   await db.from('child_stats').upsert({
-    player_id: currentUser.id,
-    total_stars: stars
-  }, { onConflict: 'player_id' });
+    child_id: currentChild.id,
+    total_fragments: stars
+  }, { onConflict: 'child_id' });
 }
 
 async function syncFromCloud() {
-  if (!currentUser) return;
+  if (!currentChild) return;
 
   const { data: levels } = await db
     .from('level_progress')
     .select('*')
-    .eq('player_id', currentUser.id);
+    .eq('child_id', currentChild.id);
 
   if (levels && levels.length > 0) {
     levels.forEach(row => {
-      localStorage.setItem('mc_lv_' + row.level, JSON.stringify({
-        score: row.score,
-        grade: row.grade,
-        treasure: row.treasure
+      localStorage.setItem('mc_lv_' + row.level_id, JSON.stringify({
+        score: row.best_score,
+        grade: row.best_grade,
+        treasure: row.has_treasure
       }));
     });
   }
 
   const { data: stats } = await db
     .from('child_stats')
-    .select('total_stars')
-    .eq('player_id', currentUser.id)
+    .select('total_fragments')
+    .eq('child_id', currentChild.id)
     .single();
 
   if (stats) {
-    localStorage.setItem('mc_stars', String(stats.total_stars));
+    localStorage.setItem('mc_stars', String(stats.total_fragments));
   }
 }
 
 async function saveProgressToCloud(level, score, grade, treasure) {
-  if (!currentUser) return;
+  if (!currentChild) return;
   try {
     await db.from('level_progress').upsert({
-      player_id: currentUser.id,
-      level: level,
-      score: score,
-      grade: grade,
-      treasure: treasure
-    }, { onConflict: 'player_id,level' });
+      child_id: currentChild.id,
+      level_id: level,
+      best_score: score,
+      best_grade: grade,
+      has_treasure: treasure,
+      star_fragments: score
+    }, { onConflict: 'child_id,level_id' });
 
     const stars = parseInt(localStorage.getItem('mc_stars') || '0');
     await db.from('child_stats').upsert({
-      player_id: currentUser.id,
-      total_stars: stars
-    }, { onConflict: 'player_id' });
+      child_id: currentChild.id,
+      total_fragments: stars
+    }, { onConflict: 'child_id' });
   } catch(e) {}
 }
 
