@@ -766,25 +766,51 @@ async function authSignUp() {
   btn.textContent = '處理中...';
   btn.disabled = true;
 
-  const { data, error } = await db.auth.signUp({ email, password });
+  try {
+    const { data, error } = await db.auth.signUp({ email, password });
 
-  if (error) {
-    showAuthError(translateError(error.message));
+    if (error) {
+      showAuthError(translateError(error.message));
+      btn.textContent = '註冊'; btn.disabled = false;
+      return;
+    }
+
+    if (!data.user) {
+      showAuthError('註冊失敗，請稍後再試');
+      btn.textContent = '註冊'; btn.disabled = false;
+      return;
+    }
+
+    // Supabase 開啟 email 確認時，session 為 null
+    if (!data.session) {
+      showAuthError('📧 請前往信箱點擊確認連結，確認後再回來登入');
+      btn.textContent = '確認信已寄出';
+      return;
+    }
+
+    // 建立 players 記錄
+    const { error: insertErr } = await db.from('players').insert({
+      id: data.user.id,
+      email: email,
+      display_name: name
+    });
+    if (insertErr && !insertErr.message.includes('duplicate')) {
+      showAuthError('建立帳號失敗：' + translateError(insertErr.message));
+      btn.textContent = '註冊'; btn.disabled = false;
+      return;
+    }
+
+    currentUser = data.user;
+    await loadPlayerData();
+    await loadOrCreateChild();
+    await syncFromLocal();
+    goTo('s-title');
+
+  } catch(e) {
+    showAuthError('發生錯誤，請稍後再試');
+    console.error('authSignUp error:', e);
     btn.textContent = '註冊'; btn.disabled = false;
-    return;
   }
-
-  await db.from('players').insert({
-    id: data.user.id,
-    email: email,
-    display_name: name
-  });
-
-  currentUser = data.user;
-  await loadPlayerData();
-  await loadOrCreateChild();
-  await syncFromLocal();
-  goTo('s-title');
 }
 
 async function authSignIn() {
@@ -827,12 +853,20 @@ function showAuthError(msg) {
 }
 
 function translateError(msg) {
+  if (!msg) return '發生錯誤，請稍後再試';
   if (msg.includes('Invalid login credentials')) return '信箱或密碼錯誤';
   if (msg.includes('Email already registered')) return '此信箱已被註冊';
   if (msg.includes('User already registered')) return '此信箱已被註冊';
+  if (msg.includes('already registered')) return '此信箱已被註冊';
   if (msg.includes('Password should be at least')) return '密碼至少需要 6 個字元';
+  if (msg.includes('password')) return '密碼格式錯誤';
   if (msg.includes('Unable to validate email')) return '信箱格式不正確';
-  return '發生錯誤，請稍後再試';
+  if (msg.includes('invalid email')) return '信箱格式不正確';
+  if (msg.includes('Email rate limit')) return '操作過於頻繁，請稍後再試';
+  if (msg.includes('Signup is disabled')) return '目前暫停開放註冊';
+  if (msg.includes('email not confirmed')) return '請先至信箱確認帳號後再登入';
+  if (msg.includes('over_email_send_rate_limit')) return '寄信太頻繁，請稍後再試';
+  return '發生錯誤（' + msg.substring(0, 60) + '）';
 }
 
 // ═══════════════════════════════════════════════
