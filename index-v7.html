@@ -419,6 +419,18 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
   color:#aabbcc;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;
   font-family:'Noto Sans TC',sans-serif;transition:all 0.2s}
 .btn-signout:hover{background:rgba(255,255,255,0.2);color:#fff}
+/* ── Collection nav buttons ── */
+.btn-collection{position:absolute;top:52px;right:12px;
+  background:linear-gradient(135deg,#cc9900,#ffd700);color:#1a1000;
+  font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:700;
+  padding:6px 14px;border:none;border-radius:8px;cursor:pointer;z-index:15;
+  box-shadow:0 0 10px rgba(255,215,0,0.3);letter-spacing:1px;transition:all 0.2s}
+.btn-collection:hover{box-shadow:0 0 18px rgba(255,215,0,0.6);transform:translateY(-1px)}
+.btn-collection-hdr{background:linear-gradient(135deg,#cc9900,#ffd700);color:#1a1000;
+  font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:700;
+  padding:6px 12px;border:none;border-radius:8px;cursor:pointer;margin-left:auto;
+  box-shadow:0 0 8px rgba(255,215,0,0.3);letter-spacing:1px;flex-shrink:0;transition:all 0.2s}
+.btn-collection-hdr:hover{box-shadow:0 0 15px rgba(255,215,0,0.5)}
 </style>
 </head>
 <body>
@@ -494,7 +506,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
     <button onclick="authSignOut()" class="btn-signout">登出</button>
   </div>
   <button class="back-btn" onclick="goTo('s-title')">← 返回</button>
-  <div id="planetStarsDisplay" style="position:absolute;top:14px;right:14px;
+  <button class="btn-collection" onclick="goTo('s-collection')">我的收藏</button>
+  <div id="planetStarsDisplay" style="position:absolute;top:14px;left:105px;
     font-family:'Orbitron',sans-serif;font-size:13px;color:#ffd700;
     text-shadow:0 0 8px #ffd700;z-index:10;letter-spacing:1px"></div>
   <div class="screen-big-title">選擇星球</div>
@@ -532,6 +545,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
   <div class="lvl-header">
     <button class="lvl-back-btn" onclick="goTo('s-world')">←</button>
     <h2 id="lvlSelTitle"></h2>
+    <button class="btn-collection-hdr" onclick="goTo('s-collection')">我的收藏</button>
   </div>
   <div class="breadcrumb" id="lvlBreadcrumb"></div>
   <div class="lvl-progress-row">
@@ -986,7 +1000,7 @@ const LEVELS = {
   '12':{op:'×',name:'二位數×一位數',   time:150,sc:[[5,100],[7,90],[9,80],[10,70],[11,60]],df:50,S:800,A:700,B:600,mon:'dragon',mnm:'火焰巨龍',tr:{i:'🔥',n:'龍焰石'}},
   '13':{op:'×',name:'二位數×二位數',   time:200,sc:[[10,100],[14,90],[18,80],[22,70],[24,60]],df:50,S:750,A:650,B:550,mon:'dragon',mnm:'火焰巨龍',tr:{i:'🪬',n:'龍心護符'}},
   '14':{op:'×',name:'三位數×一位數',   time:200,sc:[[10,100],[14,90],[18,80],[22,70],[24,60]],df:50,S:750,A:650,B:550,mon:'dragon',mnm:'火焰巨龍',tr:{i:'👑',n:'龍王冠'}},
-  '15':{op:'÷',name:'二位數÷一位數（九九乘法表）',time:90, sc:[[3,100],[5,90],[7,80],[8,70],[9,60]], df:50,S:900,A:800,B:700,mon:'demon',mnm:'暗焰魔王',tr:{i:'🌑',n:'暗焰印記'}},
+  '15':{op:'÷',name:'二位數÷一位數',time:90, sc:[[3,100],[5,90],[7,80],[8,70],[9,60]], df:50,S:900,A:800,B:700,mon:'demon',mnm:'暗焰魔王',tr:{i:'🌑',n:'暗焰印記'}},
   '16':{op:'÷',name:'二位數÷一位數（非九九）',   time:150,sc:[[5,100],[7,90],[9,80],[10,70],[11,60]],df:50,S:800,A:700,B:600,mon:'demon',mnm:'暗焰魔王',tr:{i:'🔱',n:'暗王三叉'}},
   '17':{op:'÷',name:'二位數÷二位數',   time:200,sc:[[5,100],[7,90],[9,80],[10,70],[11,60]],df:50,S:750,A:650,B:550,mon:'demon',mnm:'暗焰魔王',tr:{i:'💀',n:'魔王骸骨'}},
   '18':{op:'÷',name:'三位數÷一位數',   time:200,sc:[[10,100],[14,90],[18,80],[22,70],[24,60]],df:50,S:750,A:650,B:550,mon:'demon',mnm:'暗焰魔王',tr:{i:'🌌',n:'暗界之眼'}},
@@ -1370,8 +1384,8 @@ function genQ(id){
     case'12':a=r(10,99);b=r(2,9);ans=a*b;text=`${a} × ${b} = ?`;break;
     case'13':a=r(10,99);b=r(10,99);ans=a*b;text=`${a} × ${b} = ?`;break;
     case'14':a=r(100,999);b=r(2,9);ans=a*b;text=`${a} × ${b} = ?`;break;
-    // 關卡15：九九乘法表範圍 b=2~9, quotient=2~9, a=10~81
-    case'15':{b=r(2,9);let m=r(2,9);a=b*m;let tries=0;while(a<10&&tries++<30){m=r(2,9);a=b*m;}ans=a/b;text=`${a} ÷ ${b} = ?`;}break;
+    // 關卡15：被除數20~99、除數2~9、整除（枚舉所有合法組合後隨機取一）
+    case'15':{const p15=[];for(let _b=2;_b<=9;_b++)for(let _a=20;_a<=99;_a++)if(_a%_b===0)p15.push([_a,_b]);const c15=p15[Math.floor(Math.random()*p15.length)];a=c15[0];b=c15[1];ans=a/b;text=`${a} ÷ ${b} = ?`;}break;
     // 關卡16：非九九範圍 quotient=10~11
     case'16':{b=r(2,9);let m=r(10,11);a=b*m;let tries=0;while((a<10||a>99)&&tries++<30){b=r(2,9);m=r(10,11);a=b*m;}ans=a/b;text=`${a} ÷ ${b} = ?`;}break;
     case'17':{b=r(11,19);let m=r(2,5);a=b*m;let tries=0;while((a<10||a>99)&&tries++<30){m=r(2,5);a=b*m;}ans=a/b;text=`${a} ÷ ${b} = ?`;}break;
@@ -1399,6 +1413,7 @@ let curId=null;
 let GS={};
 
 function startLevel(id){
+  try{ac();}catch(e){} // 在使用者點擊當下 resume AudioContext，避免第一題無聲
   curId=id;
   const lv=LEVELS[id];
   GS={
@@ -1652,22 +1667,21 @@ function endGame(result){
       b.className=cls; b.textContent=text;
       b.onclick=fn; btnRow.appendChild(b);
     };
-    addBtn('🔄 再挑戰','btn-main',()=>retryLevel());
+    addBtn('再挑戰','btn-main',()=>retryLevel());
     if(!isLast&&hasNext){
-      addBtn('➡️ 下一關','btn-main',()=>startLevel(nextId));
-    } else {
-      addBtn('🗺️ 回地圖','btn-sec',()=>goTo('s-world'));
+      addBtn('下一關','btn-main',()=>startLevel(nextId));
     }
-    if(grade!=='S'){
-      addBtn('💪 去練功','btn-sec',()=>alert('練功區即將推出，敬請期待！'));
-    }
-    if(!isLast||grade==='S'){
-      addBtn('🗺️ 回地圖','btn-sec',()=>goTo('s-world'));
-    }
+    addBtn('回地圖','btn-sec',()=>goTo('s-world'));
+    addBtn('我的收藏','btn-sec',()=>goTo('s-collection'));
     }; // end showWinScreen
-    // Check if this is a milestone level → show celebration first
-    if(CELEB_DATA[curId]) showCelebration(curId, showWinScreen);
-    else showWinScreen();
+    // 先顯示結算畫面（s-win），里程碑關卡再延遲2秒跳慶祝
+    showWinScreen();
+    if(CELEB_DATA[curId]){
+      _celebTimeout=setTimeout(()=>{
+        _celebTimeout=null;
+        showCelebration(curId,()=>goTo('s-world'));
+      },2000);
+    }
 
   } else {
     sfx('fail');
@@ -1684,6 +1698,7 @@ const CELEB_DATA = {
   '18':{title:'👑 燃燒星完全制霸！\n守護神即將甦醒！',unlock:'🌟 你是燃燒星的英雄！'},
 };
 let _celebWinCb=null;
+let _celebTimeout=null;
 function showCelebration(id, afterCb){
   const data=CELEB_DATA[id];
   if(!data){afterCb();return;}
@@ -1750,6 +1765,7 @@ function refreshStarsDisplay(){
 }
 
 function goTo(id){
+  if(_celebTimeout){clearTimeout(_celebTimeout);_celebTimeout=null;}
   const cur=document.querySelector('.screen.active');
   const next=document.getElementById(id);
   if(!next) return;
