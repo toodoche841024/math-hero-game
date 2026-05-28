@@ -1,6 +1,6 @@
 # 任務進度追蹤
 
-## 狀態：進行中
+## 狀態：全部完成 ✅
 
 ## 完成清單
 
@@ -41,5 +41,5 @@
 - [x] 登入後呼叫 checkBattleInvites
 
 ### 部署
-- [ ] copy index-v7.html index.html
-- [ ] git push 成功
+- [x] copy index-v7.html index.html
+- [x] git push 成功
