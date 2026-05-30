@@ -442,7 +442,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 .menu-btn:hover{background:rgba(255,255,255,0.15);color:#fff}
 #s-account{background:radial-gradient(ellipse at 50% 30%,#0d0d2e,#000010);overflow-y:auto}
 #s-battle-waiting,#s-battle-result{background:radial-gradient(ellipse at 50% 50%,#0d0030,#000010)}
-#s-battle{background:#000510}
+#s-battle{background:#000510;position:fixed;inset:0;overflow:hidden}
 /* ── Collection nav buttons ── */
 .btn-collection{position:absolute;top:52px;right:12px;
   background:linear-gradient(135deg,#cc9900,#ffd700);color:#1a1000;
@@ -988,24 +988,37 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 
 <!-- ── S15: Battle ── -->
 <div id="s-battle" class="screen">
-  <div style="display:flex;flex-direction:column;height:100vh">
-    <div style="background:rgba(220,50,50,0.2);padding:20px;text-align:center;border-bottom:1px solid rgba(220,50,50,0.3)">
-      <p style="color:#ff6b6b;font-size:13px;margin:0">對手分數</p>
-      <p id="battle-opponent-score" style="color:#fff;font-size:52px;font-weight:bold;margin:4px 0">0</p>
+  <div style="display:flex;flex-direction:column;height:100svh;min-height:100vh;max-height:100svh">
+
+    <!-- 對手分數區 -->
+    <div style="flex:0 0 auto;background:rgba(220,50,50,0.2);padding:12px 16px;text-align:center;border-bottom:1px solid rgba(220,50,50,0.3)">
+      <p style="color:#ff6b6b;font-size:12px;margin:0">對手分數</p>
+      <p id="battle-opponent-score" style="color:#fff;font-size:40px;font-weight:bold;margin:2px 0;line-height:1">0</p>
     </div>
-    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px">
-      <p id="battle-progress" style="color:#aaa;font-size:14px;margin:0"></p>
-      <p id="battle-question" style="color:#fff;font-size:52px;font-weight:bold;text-align:center;margin:0;line-height:1.2"></p>
-      <input id="battle-answer-input" type="number" placeholder="答案"
-        style="font-size:36px;text-align:center;background:rgba(255,255,255,0.1);border:2px solid rgba(255,215,0,0.5);border-radius:12px;color:#fff;padding:12px;width:200px;outline:none"
+
+    <!-- 題目區 -->
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;overflow:hidden">
+      <p id="battle-progress" style="color:#aaa;font-size:13px;margin:0"></p>
+      <p id="battle-question" style="color:#fff;font-size:clamp(32px,8vw,52px);font-weight:bold;text-align:center;margin:0;line-height:1.2"></p>
+      <input id="battle-answer-input"
+        type="number"
+        inputmode="numeric"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        placeholder="答案"
+        style="font-size:clamp(24px,6vw,36px);text-align:center;background:rgba(255,255,255,0.1);border:2px solid rgba(255,215,0,0.5);border-radius:12px;color:#fff;padding:10px;width:min(200px,60vw);outline:none;-webkit-appearance:none"
         onkeydown="if(event.key==='Enter') submitBattleAnswer()">
       <button onclick="submitBattleAnswer()"
-        style="background:linear-gradient(135deg,#f5a623,#f8d000);color:#1a1a2e;border:none;border-radius:12px;padding:14px 52px;font-size:20px;font-weight:bold;cursor:pointer">確認</button>
+        style="background:linear-gradient(135deg,#f5a623,#f8d000);color:#1a1a2e;border:none;border-radius:12px;padding:12px 0;font-size:clamp(16px,4vw,20px);font-weight:bold;cursor:pointer;width:min(200px,60vw)">確認</button>
     </div>
-    <div style="background:rgba(50,100,220,0.2);padding:20px;text-align:center;border-top:1px solid rgba(50,100,220,0.3)">
-      <p style="color:#6b9fff;font-size:13px;margin:0">我的分數</p>
-      <p id="battle-my-score" style="color:#fff;font-size:52px;font-weight:bold;margin:4px 0">0</p>
+
+    <!-- 我的分數區 -->
+    <div style="flex:0 0 auto;background:rgba(50,100,220,0.2);padding:12px 16px;text-align:center;border-top:1px solid rgba(50,100,220,0.3)">
+      <p style="color:#6b9fff;font-size:12px;margin:0">我的分數</p>
+      <p id="battle-my-score" style="color:#fff;font-size:40px;font-weight:bold;margin:2px 0;line-height:1">0</p>
     </div>
+
   </div>
 </div>
 
@@ -2870,30 +2883,65 @@ function startBattle() {
 function showBattleQuestion() {
   if (battleCurrentQ >= battleQuestions.length) { finishBattle(); return; }
   const q = battleQuestions[battleCurrentQ];
-  document.getElementById('battle-question').textContent = q.question;
+  const qEl = document.getElementById('battle-question');
+  qEl.textContent = q.question;
+  qEl.style.fontSize = 'clamp(32px,8vw,52px)';
   document.getElementById('battle-progress').textContent = `第 ${battleCurrentQ + 1} / ${battleQuestions.length} 題`;
   document.getElementById('battle-my-score').textContent = battleMyScore;
   const inp = document.getElementById('battle-answer-input');
-  if (inp) { inp.value = ''; inp.focus(); }
+  inp.value = '';
+  inp.disabled = false;
+  const btn = document.querySelector('#s-battle button[onclick="submitBattleAnswer()"]');
+  if (btn) btn.disabled = false;
+  setTimeout(() => { inp.focus(); inp.click(); }, 100);
 }
 
 async function submitBattleAnswer() {
-  const input = document.getElementById('battle-answer-input');
-  const userAnswer = parseInt(input.value);
+  const inp = document.getElementById('battle-answer-input');
+  const userAnswer = parseInt(inp.value);
   if (isNaN(userAnswer)) return;
+
+  inp.disabled = true;
+  const btn = document.querySelector('#s-battle button[onclick="submitBattleAnswer()"]');
+  if (btn) btn.disabled = true;
+
   const q = battleQuestions[battleCurrentQ];
   const isCorrect = userAnswer === q.answer;
   const timeSpent = Date.now() - battleStartTime;
-  if (isCorrect) battleMyScore++;
+
+  if (isCorrect) {
+    const { data: opponentAnswer } = await db
+      .from('battle_answers')
+      .select('id')
+      .eq('room_id', battleRoom.id)
+      .eq('question_index', battleCurrentQ)
+      .eq('is_correct', true)
+      .neq('player_id', currentUser.id)
+      .limit(1);
+    const opponentAlreadyCorrect = opponentAnswer && opponentAnswer.length > 0;
+    if (!opponentAlreadyCorrect) battleMyScore++;
+  }
+
   await db.from('battle_answers').insert({
-    room_id: battleRoom.id, player_id: currentUser.id,
-    question_index: battleCurrentQ, answer: String(input.value),
-    is_correct: isCorrect, time_spent: timeSpent
+    room_id: battleRoom.id,
+    player_id: currentUser.id,
+    question_index: battleCurrentQ,
+    answer: String(userAnswer),
+    is_correct: isCorrect,
+    time_spent: timeSpent
   });
+
   const scoreField = currentUser.id === battleRoom.player1_id ? 'player1_score' : 'player2_score';
   await db.from('battle_rooms').update({ [scoreField]: battleMyScore }).eq('id', battleRoom.id);
-  battleCurrentQ++;
-  showBattleQuestion();
+
+  const questionEl = document.getElementById('battle-question');
+  questionEl.textContent = isCorrect ? '✅ 答對！' : `❌ 答案是 ${q.answer}`;
+  questionEl.style.fontSize = '32px';
+
+  setTimeout(() => {
+    battleCurrentQ++;
+    showBattleQuestion();
+  }, 800);
 }
 
 async function finishBattle() {
