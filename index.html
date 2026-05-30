@@ -987,36 +987,52 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 </div>
 
 <!-- ── S15: Battle ── -->
-<div id="s-battle" class="screen">
-  <div style="display:flex;flex-direction:column;height:100svh;min-height:100vh;max-height:100svh">
+<div id="s-battle" class="screen" style="position:fixed;inset:0;overflow:hidden;background:#0a0a2e;">
+  <div style="display:flex;flex-direction:column;height:100%;height:100dvh;">
 
-    <!-- 對手分數區 -->
-    <div style="flex:0 0 auto;background:rgba(220,50,50,0.2);padding:12px 16px;text-align:center;border-bottom:1px solid rgba(220,50,50,0.3)">
-      <p style="color:#ff6b6b;font-size:12px;margin:0">對手分數</p>
-      <p id="battle-opponent-score" style="color:#fff;font-size:40px;font-weight:bold;margin:2px 0;line-height:1">0</p>
+    <!-- 頂部：雙方分數 + 計時器 -->
+    <div style="flex:0 0 auto;display:flex;align-items:stretch;background:rgba(0,0,0,0.3);border-bottom:1px solid rgba(255,255,255,0.1);">
+      <!-- 對手 -->
+      <div style="flex:1;padding:10px 8px;text-align:center;background:rgba(220,50,50,0.15);border-right:1px solid rgba(255,255,255,0.1);">
+        <div id="battle-opponent-name" style="color:#ff6b6b;font-size:11px;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">對手</div>
+        <div id="battle-opponent-score" style="color:#fff;font-size:36px;font-weight:bold;line-height:1.1;">0</div>
+      </div>
+      <!-- 計時器 -->
+      <div style="flex:0 0 70px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;">
+        <div id="battle-timer-circle" style="width:48px;height:48px;border-radius:50%;border:3px solid #f8d000;display:flex;align-items:center;justify-content:center;">
+          <span id="battle-timer" style="color:#f8d000;font-size:22px;font-weight:bold;">10</span>
+        </div>
+      </div>
+      <!-- 我 -->
+      <div style="flex:1;padding:10px 8px;text-align:center;background:rgba(50,100,220,0.15);border-left:1px solid rgba(255,255,255,0.1);">
+        <div style="color:#6b9fff;font-size:11px;margin:0;">我的分數</div>
+        <div id="battle-my-score" style="color:#fff;font-size:36px;font-weight:bold;line-height:1.1;">0</div>
+      </div>
     </div>
 
-    <!-- 題目區 -->
-    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;overflow:hidden">
-      <p id="battle-progress" style="color:#aaa;font-size:13px;margin:0"></p>
-      <p id="battle-question" style="color:#fff;font-size:clamp(32px,8vw,52px);font-weight:bold;text-align:center;margin:0;line-height:1.2"></p>
-      <input id="battle-answer-input"
-        type="number"
-        inputmode="numeric"
-        autocomplete="off"
-        autocorrect="off"
-        autocapitalize="off"
-        placeholder="答案"
-        style="font-size:clamp(24px,6vw,36px);text-align:center;background:rgba(255,255,255,0.1);border:2px solid rgba(255,215,0,0.5);border-radius:12px;color:#fff;padding:10px;width:min(200px,60vw);outline:none;-webkit-appearance:none"
-        onkeydown="if(event.key==='Enter') submitBattleAnswer()">
-      <button onclick="submitBattleAnswer()"
-        style="background:linear-gradient(135deg,#f5a623,#f8d000);color:#1a1a2e;border:none;border-radius:12px;padding:12px 0;font-size:clamp(16px,4vw,20px);font-weight:bold;cursor:pointer;width:min(200px,60vw)">確認</button>
+    <!-- 中間：題目 + 回饋 -->
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:12px;min-height:0;">
+      <div id="battle-progress" style="color:#aaa;font-size:13px;"></div>
+      <div id="battle-question" style="color:#fff;font-size:clamp(28px,10vw,56px);font-weight:bold;text-align:center;line-height:1.2;"></div>
+      <div id="battle-feedback" style="font-size:clamp(14px,4vw,20px);font-weight:bold;min-height:28px;text-align:center;"></div>
     </div>
 
-    <!-- 我的分數區 -->
-    <div style="flex:0 0 auto;background:rgba(50,100,220,0.2);padding:12px 16px;text-align:center;border-top:1px solid rgba(50,100,220,0.3)">
-      <p style="color:#6b9fff;font-size:12px;margin:0">我的分數</p>
-      <p id="battle-my-score" style="color:#fff;font-size:40px;font-weight:bold;margin:2px 0;line-height:1">0</p>
+    <!-- 底部：輸入區 -->
+    <div id="battle-input-area" style="flex:0 0 auto;padding:12px 16px;padding-bottom:max(12px,env(safe-area-inset-bottom));background:rgba(0,0,0,0.2);border-top:1px solid rgba(255,255,255,0.1);">
+      <div style="display:flex;gap:8px;max-width:400px;margin:0 auto;">
+        <input id="battle-answer-input"
+          type="number"
+          inputmode="numeric"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          placeholder="輸入答案"
+          style="flex:1;font-size:clamp(20px,5vw,28px);text-align:center;background:rgba(255,255,255,0.1);border:2px solid rgba(255,215,0,0.5);border-radius:12px;color:#fff;padding:10px;outline:none;-webkit-appearance:none;min-width:0;"
+          onkeydown="if(event.key==='Enter') submitBattleAnswer()">
+        <button onclick="submitBattleAnswer()"
+          id="battle-submit-btn"
+          style="flex:0 0 auto;background:linear-gradient(135deg,#f5a623,#f8d000);color:#1a1a2e;border:none;border-radius:12px;padding:10px 20px;font-size:clamp(16px,4vw,20px);font-weight:bold;cursor:pointer;white-space:nowrap;">確認</button>
+      </div>
     </div>
 
   </div>
@@ -1053,7 +1069,10 @@ let battleInviteChannel = null;
 let battleQuestions = [];
 let battleCurrentQ = 0;
 let battleMyScore = 0;
-let battleStartTime = null;
+let battleCountdownTimer = null;
+let battleQuestionTimer = null;
+let battleTimeLeft = 10;
+let battleStarted = false;
 
 // ═══════════════════════════════════════════════
 // 帳號系統
@@ -1144,6 +1163,7 @@ function updateUserDisplay() {
 }
 
 async function authSignUp() {
+  unlockAudio();
   const email = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value;
   const name = document.getElementById('auth-name').value.trim();
@@ -1208,6 +1228,7 @@ async function authSignUp() {
 }
 
 async function authSignIn() {
+  unlockAudio();
   const email = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value;
 
@@ -1679,9 +1700,12 @@ const MON_SVG_FN = {imp:impSVG,golem:golemSVG,dragon:dragonSVG,demon:demonSVG};
 // ═══════════════════════════════════════════════
 let _ac=null;
 function ac(){
-  if(!_ac) _ac=new(window.AudioContext||window.webkitAudioContext)();
+  if(!_ac){_ac=new(window.AudioContext||window.webkitAudioContext)();window.audioCtx=_ac;}
   if(_ac.state==='suspended') _ac.resume();
   return _ac;
+}
+function unlockAudio(){
+  try{ac();}catch(e){}
 }
 function tone(f,d,t='sine',v=0.3,a=0.01){
   try{
@@ -2864,7 +2888,7 @@ function subscribeToBattleRoom(roomId) {
 
 function handleBattleRoomUpdate(room) {
   battleRoom = room;
-  if (room.status === 'ready' && !battleStartTime) startBattle();
+  if (room.status === 'ready' && !battleStarted) startBattle();
   if (room.player1_finished && room.player2_finished) showBattleResult();
   const opScore = currentUser.id === room.player1_id ? room.player2_score : room.player1_score;
   const el = document.getElementById('battle-opponent-score');
@@ -2872,79 +2896,131 @@ function handleBattleRoomUpdate(room) {
 }
 
 function startBattle() {
-  battleQuestions = generateBattleQuestions(battleRoom.seed, battleRoom.level_id, 5);
+  battleQuestions = generateBattleQuestions(battleRoom.seed, battleRoom.level_id, 10);
   battleCurrentQ = 0;
   battleMyScore = 0;
-  battleStartTime = Date.now();
+  battleStarted = true;
+  const opponentId = currentUser.id === battleRoom.player1_id
+    ? battleRoom.player2_id : battleRoom.player1_id;
+  db.from('players').select('display_name').eq('id', opponentId).single()
+    .then(({data}) => {
+      const el = document.getElementById('battle-opponent-name');
+      if (el && data) el.textContent = data.display_name;
+    });
   goTo('s-battle');
   showBattleQuestion();
 }
 
 function showBattleQuestion() {
   if (battleCurrentQ >= battleQuestions.length) { finishBattle(); return; }
+
   const q = battleQuestions[battleCurrentQ];
-  const qEl = document.getElementById('battle-question');
-  qEl.textContent = q.question;
-  qEl.style.fontSize = 'clamp(32px,8vw,52px)';
-  document.getElementById('battle-progress').textContent = `第 ${battleCurrentQ + 1} / ${battleQuestions.length} 題`;
+  document.getElementById('battle-question').textContent = q.question;
+  document.getElementById('battle-progress').textContent =
+    `第 ${battleCurrentQ + 1} / ${battleQuestions.length} 題`;
+  document.getElementById('battle-feedback').textContent = '';
   document.getElementById('battle-my-score').textContent = battleMyScore;
+  document.getElementById('battle-timer').textContent = '10';
+  document.getElementById('battle-timer-circle').style.borderColor = '#f8d000';
+
+  const inputArea = document.getElementById('battle-input-area');
+  if (inputArea) inputArea.style.display = 'block';
   const inp = document.getElementById('battle-answer-input');
   inp.value = '';
   inp.disabled = false;
-  const btn = document.querySelector('#s-battle button[onclick="submitBattleAnswer()"]');
+  const btn = document.getElementById('battle-submit-btn');
   if (btn) btn.disabled = false;
-  setTimeout(() => { inp.focus(); inp.click(); }, 100);
+  setTimeout(() => { try { inp.focus(); inp.click(); } catch(e){} }, 150);
+
+  if (battleQuestionTimer) clearInterval(battleQuestionTimer);
+  battleTimeLeft = 10;
+  battleQuestionTimer = setInterval(() => {
+    battleTimeLeft--;
+    const timerEl = document.getElementById('battle-timer');
+    if (timerEl) timerEl.textContent = battleTimeLeft;
+    const circle = document.getElementById('battle-timer-circle');
+    if (circle) {
+      if (battleTimeLeft <= 3) circle.style.borderColor = '#f44336';
+      else if (battleTimeLeft <= 5) circle.style.borderColor = '#ff9800';
+      else circle.style.borderColor = '#f8d000';
+    }
+    if (battleTimeLeft <= 0) {
+      clearInterval(battleQuestionTimer);
+      handleBattleAnswer(false, 0);
+    }
+  }, 1000);
 }
 
 async function submitBattleAnswer() {
   const inp = document.getElementById('battle-answer-input');
   const userAnswer = parseInt(inp.value);
-  if (isNaN(userAnswer)) return;
-
-  inp.disabled = true;
-  const btn = document.querySelector('#s-battle button[onclick="submitBattleAnswer()"]');
-  if (btn) btn.disabled = true;
-
+  if (isNaN(userAnswer) || inp.disabled) return;
+  clearInterval(battleQuestionTimer);
   const q = battleQuestions[battleCurrentQ];
   const isCorrect = userAnswer === q.answer;
-  const timeSpent = Date.now() - battleStartTime;
+  const earnedScore = isCorrect ? battleTimeLeft : 0;
+  handleBattleAnswer(isCorrect, earnedScore, userAnswer, q.answer);
+}
 
-  if (isCorrect) {
-    const { data: opponentAnswer } = await db
-      .from('battle_answers')
-      .select('id')
-      .eq('room_id', battleRoom.id)
-      .eq('question_index', battleCurrentQ)
-      .eq('is_correct', true)
-      .neq('player_id', currentUser.id)
-      .limit(1);
-    const opponentAlreadyCorrect = opponentAnswer && opponentAnswer.length > 0;
-    if (!opponentAlreadyCorrect) battleMyScore++;
+async function handleBattleAnswer(isCorrect, earnedScore, userAnswer, correctAnswer) {
+  const inp = document.getElementById('battle-answer-input');
+  const btn = document.getElementById('battle-submit-btn');
+  if (inp) inp.disabled = true;
+  if (btn) btn.disabled = true;
+
+  if (earnedScore > 0) battleMyScore += earnedScore;
+
+  const feedback = document.getElementById('battle-feedback');
+  const question = battleQuestions[battleCurrentQ];
+  if (feedback) {
+    if (earnedScore > 0) {
+      feedback.style.color = '#4CAF50';
+      feedback.textContent = `✅ 答對！+${earnedScore} 分`;
+    } else if (userAnswer !== undefined && userAnswer === question?.answer) {
+      feedback.style.color = '#ff9800';
+      feedback.textContent = `⏰ 太慢了！答案是 ${question?.answer}`;
+    } else {
+      feedback.style.color = '#f44336';
+      feedback.textContent = `❌ 答錯！答案是 ${correctAnswer ?? question?.answer}`;
+    }
   }
+
+  document.getElementById('battle-my-score').textContent = battleMyScore;
+  const inputArea = document.getElementById('battle-input-area');
+  if (inputArea) inputArea.style.display = 'none';
 
   await db.from('battle_answers').insert({
     room_id: battleRoom.id,
     player_id: currentUser.id,
     question_index: battleCurrentQ,
-    answer: String(userAnswer),
-    is_correct: isCorrect,
-    time_spent: timeSpent
+    answer: String(userAnswer ?? ''),
+    is_correct: earnedScore > 0,
+    time_spent: (10 - battleTimeLeft) * 1000
   });
 
   const scoreField = currentUser.id === battleRoom.player1_id ? 'player1_score' : 'player2_score';
   await db.from('battle_rooms').update({ [scoreField]: battleMyScore }).eq('id', battleRoom.id);
 
-  const questionEl = document.getElementById('battle-question');
-  questionEl.textContent = isCorrect ? '✅ 答對！' : `❌ 答案是 ${q.answer}`;
-  questionEl.style.fontSize = '32px';
+  let countdown = 3;
+  if (feedback) feedback.textContent += `　（${countdown} 秒後下一題）`;
 
-  setTimeout(() => {
-    battleCurrentQ++;
-    showBattleQuestion();
-  }, 800);
+  if (battleCountdownTimer) clearInterval(battleCountdownTimer);
+  battleCountdownTimer = setInterval(() => {
+    countdown--;
+    if (feedback && countdown > 0) {
+      feedback.textContent = feedback.textContent.replace(/（\d+\s*秒後下一題）/, `（${countdown} 秒後下一題）`);
+    }
+    if (countdown <= 0) {
+      clearInterval(battleCountdownTimer);
+      battleCurrentQ++;
+      showBattleQuestion();
+    }
+  }, 1000);
 }
 
 async function finishBattle() {
+  if (battleQuestionTimer) clearInterval(battleQuestionTimer);
+  if (battleCountdownTimer) clearInterval(battleCountdownTimer);
   const finishField = currentUser.id === battleRoom.player1_id ? 'player1_finished' : 'player2_finished';
   await db.from('battle_rooms').update({ [finishField]: true }).eq('id', battleRoom.id);
   const msgEl = document.getElementById('battle-waiting-msg');
@@ -2953,17 +3029,20 @@ async function finishBattle() {
 }
 
 async function showBattleResult() {
-  if (!battleRoom) return;
-  const myScore = currentUser.id === battleRoom.player1_id ? battleRoom.player1_score : battleRoom.player2_score;
-  const opScore = currentUser.id === battleRoom.player1_id ? battleRoom.player2_score : battleRoom.player1_score;
+  if (battleQuestionTimer) clearInterval(battleQuestionTimer);
+  if (battleCountdownTimer) clearInterval(battleCountdownTimer);
+  const myScore = currentUser.id === battleRoom.player1_id
+    ? battleRoom.player1_score : battleRoom.player2_score;
+  const opScore = currentUser.id === battleRoom.player1_id
+    ? battleRoom.player2_score : battleRoom.player1_score;
   const win = myScore > opScore;
   const draw = myScore === opScore;
   document.getElementById('battle-result-title').textContent = draw ? '平局！' : win ? '🏆 勝利！' : '😢 落敗';
-  document.getElementById('battle-result-score').textContent = `${myScore||0} : ${opScore||0}`;
+  document.getElementById('battle-result-score').textContent = `${myScore} : ${opScore}`;
   if (win) addStarFragments(10);
   else if (draw) addStarFragments(3);
   if (battleChannel) { db.removeChannel(battleChannel); battleChannel = null; }
-  battleStartTime = null;
+  battleStarted = false;
   goTo('s-battle-result');
 }
 
