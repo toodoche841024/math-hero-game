@@ -425,11 +425,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
   padding:6px 12px;border-radius:8px;font-size:13px;cursor:pointer;
   font-family:'Noto Sans TC',sans-serif;transition:all 0.2s;white-space:nowrap}
 .btn-signout:hover{background:rgba(220,50,50,0.9)}
-#s-title,#s-planet,#s-world,#s-levels{padding-top:44px}
-.my-info-card{background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.35);
-  border-radius:10px;padding:12px 16px;margin-bottom:14px;color:#f8d000;
-  font-size:14px;font-weight:700;text-align:center}
-.friend-name{flex:1;font-size:14px;color:#dde}
+.my-info-card { display:flex; align-items:center; gap:12px; background:rgba(255,215,0,0.08); border:1px solid rgba(255,215,0,0.3); border-radius:12px; padding:12px 16px; margin-bottom:14px; }
+.friend-name { color:#fff; font-size:14px; font-weight:500; }
 .btn-challenge-active{background:linear-gradient(135deg,#e91e63,#c2185b);
   border:none;border-radius:8px;padding:6px 14px;color:#fff;cursor:pointer;
   font-size:12px;font-family:'Noto Sans TC',sans-serif;font-weight:bold}
@@ -522,6 +519,48 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 .task-progress-bar div{background:gold;border-radius:10px;height:100%;transition:width 0.3s}
 .task-meta{color:#aaa;font-size:13px}
 .task-status{color:gold;font-size:13px;margin-top:4px}
+
+/* ── Top Bar ── */
+.top-bar-placeholder{width:100%;flex-shrink:0}
+.top-bar{position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:rgba(10,10,46,0.92);backdrop-filter:blur(8px);z-index:500;height:44px;box-sizing:border-box;width:100%}
+.top-bar-left{display:flex;align-items:center}
+.top-bar-right{display:flex;align-items:center;gap:8px}
+.btn-top-collection{background:linear-gradient(135deg,#f5a623,#f8d000);color:#1a1a2e;border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:bold;cursor:pointer;white-space:nowrap}
+.btn-top-signout{background:rgba(220,50,50,0.75);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;white-space:nowrap}
+.top-bar-username{color:#f8d000;font-size:12px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── Account Screen ── */
+.acc-tab-bar{display:flex;border-bottom:1px solid rgba(255,255,255,0.15);margin-bottom:20px}
+.acc-tab{flex:1;padding:10px 2px;text-align:center;color:#aaa;cursor:pointer;border:none;background:none;font-size:12px}
+.acc-tab.active{color:#f8d000;border-bottom:2px solid #f8d000}
+.acc-card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.2);border-radius:12px;padding:16px;margin-bottom:14px}
+.acc-label{color:#aaa;font-size:12px;margin-bottom:4px}
+.acc-value{color:#fff;font-size:15px;margin-bottom:14px}
+.avatar-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.avatar-option{background:rgba(255,255,255,0.05);border:2px solid transparent;border-radius:10px;padding:10px 4px;text-align:center;cursor:pointer;font-size:26px;transition:all 0.2s}
+.avatar-option:hover{border-color:rgba(255,215,0,0.5)}
+.avatar-option.avatar-selected{border-color:#f8d000;background:rgba(255,215,0,0.1)}
+.acc-input{width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:8px;color:#fff;padding:10px 12px;font-size:14px;margin-bottom:10px;box-sizing:border-box}
+.acc-btn{width:100%;background:linear-gradient(135deg,#f5a623,#f8d000);color:#1a1a2e;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:bold;cursor:pointer;margin-bottom:8px}
+.acc-btn-danger{background:rgba(220,50,50,0.8)!important;color:#fff!important}
+.acc-btn-secondary{background:rgba(255,255,255,0.1)!important;color:#fff!important}
+
+/* ── Friends Screen ── */
+.friend-row{display:flex;align-items:center;justify-content:space-between;padding:12px;margin:6px 0;background:rgba(255,255,255,0.04);border-radius:10px;gap:8px}
+.btn-challenge-active{background:linear-gradient(135deg,#e91e63,#c2185b);color:#fff;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px}
+.btn-encourage{background:rgba(233,30,99,0.5);color:#fff;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px}
+.btn-delete-friend{background:rgba(100,100,100,0.35);color:#fff;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px}
+.btn-accept{background:rgba(76,175,80,0.8);color:#fff;border:none;border-radius:8px;padding:6px 12px;cursor:pointer}
+.btn-decline{background:rgba(220,50,50,0.7);color:#fff;border:none;border-radius:8px;padding:6px 12px;cursor:pointer}
+.btn-send-request{background:linear-gradient(135deg,#4CAF50,#2e7d32);color:#fff;border:none;border-radius:8px;padding:6px 14px;cursor:pointer;font-size:13px}
+.btn-friend-status{background:rgba(255,255,255,0.08);color:#aaa;border:none;border-radius:8px;padding:6px 12px;cursor:not-allowed;font-size:13px}
+.encourage-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:9999}
+.encourage-box{background:#1a1a3e;border:1px solid rgba(255,215,0,0.4);border-radius:16px;padding:24px;max-width:320px;width:90%}
+.encourage-msg-btn{display:block;width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.25);border-radius:8px;color:#fff;padding:10px 12px;margin-bottom:8px;cursor:pointer;font-size:14px;text-align:left}
+.encourage-msg-btn:hover{background:rgba(255,215,0,0.1)}
+#s-win{justify-content:flex-start!important}
+#s-lose{justify-content:flex-start!important}
+#s-celebrate{justify-content:flex-start!important}
 </style>
 </head>
 <body>
@@ -575,14 +614,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 
 <!-- ── S1: Title ── -->
 <div id="s-title" class="screen">
-  <div class="user-bar">
-    <button onclick="goTo('s-collection')" class="btn-collection-bar">我的收藏</button>
-    <div class="user-bar-right">
-      <span class="user-display user-name-display"></span>
-      <button onclick="authSignOut()" class="btn-signout">登出</button>
-    </div>
-  </div>
-  <div class="title-content">
+  <div class="top-bar-placeholder"></div>
+  <div class="title-content" style="flex:1">
     <div>
       <div class="logo-main">星界召喚師</div>
       <div class="logo-sub">數學奇航</div>
@@ -601,13 +634,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 
 <!-- ── S2: Planet Select ── -->
 <div id="s-planet" class="screen">
-  <div class="user-bar">
-    <button onclick="goTo('s-collection')" class="btn-collection-bar">我的收藏</button>
-    <div class="user-bar-right">
-      <span class="user-display user-name-display"></span>
-      <button onclick="authSignOut()" class="btn-signout">登出</button>
-    </div>
-  </div>
+  <div class="top-bar-placeholder"></div>
   <button class="back-btn" onclick="goTo('s-title')">← 返回</button>
   <div class="screen-big-title">選擇星球</div>
   <div class="planets-grid">
@@ -626,32 +653,18 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 
 <!-- ── S3: World Map ── -->
 <div id="s-world" class="screen">
-  <div class="user-bar">
-    <button onclick="goTo('s-collection')" class="btn-collection-bar">我的收藏</button>
-    <div class="user-bar-right">
-      <span class="user-display user-name-display"></span>
-      <button onclick="authSignOut()" class="btn-signout">登出</button>
-    </div>
-  </div>
+  <div class="top-bar-placeholder"></div>
   <button class="back-btn" onclick="goTo('s-planet')">← 返回</button>
-  <button class="btn-collection" onclick="goTo('s-collection')">我的收藏</button>
   <div class="screen-big-title">燃燒星</div>
   <div class="ops-grid" id="opsGrid"></div>
 </div>
 
 <!-- ── S4: Level Select ── -->
 <div id="s-levels" class="screen">
-  <div class="user-bar">
-    <button onclick="goTo('s-collection')" class="btn-collection-bar">我的收藏</button>
-    <div class="user-bar-right">
-      <span class="user-display user-name-display"></span>
-      <button onclick="authSignOut()" class="btn-signout">登出</button>
-    </div>
-  </div>
+  <div class="top-bar-placeholder"></div>
   <div class="lvl-header">
     <button class="lvl-back-btn" onclick="goTo('s-world')">←</button>
     <h2 id="lvlSelTitle"></h2>
-    <button class="btn-collection-hdr" onclick="goTo('s-collection')">我的收藏</button>
   </div>
   <div class="breadcrumb" id="lvlBreadcrumb"></div>
   <div class="lvl-progress-row">
@@ -676,6 +689,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 
 <!-- ── S6: Game ── -->
 <div id="s-game" class="screen">
+  <div class="top-bar-placeholder"></div>
   <div class="screen-flash-overlay" id="sfo"></div>
 
   <!-- HUD -->
@@ -753,8 +767,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 
 <!-- ── S6.5: Celebration ── -->
 <div id="s-celebrate" class="screen">
+  <div class="top-bar-placeholder"></div>
   <div class="celeb-particles" id="celebParticles"></div>
-  <div class="celeb-box">
+  <div class="celeb-box" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center">
     <div class="celeb-hero" id="celebHero"></div>
     <div class="celeb-title" id="celebTitle"></div>
     <div class="celeb-unlock" id="celebUnlock"></div>
@@ -764,6 +779,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 
 <!-- ── S7: Win ── -->
 <div id="s-win" class="screen">
+  <div class="top-bar-placeholder"></div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;overflow-y:auto;width:100%">
   <div class="win-box">
     <div class="win-title">⭐ 過關！</div>
     <div class="grade-big" id="winGrade"></div>
@@ -777,10 +794,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
     </div>
     <div class="btn-row" id="winBtnRow"></div>
   </div>
+  </div>
 </div>
 
 <!-- ── S8: Lose ── -->
 <div id="s-lose" class="screen">
+  <div class="top-bar-placeholder"></div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;width:100%">
   <div class="lose-box">
     <div class="lose-title">💀 挑戰失敗</div>
     <div class="lose-msg" id="loseMsg"></div>
@@ -791,10 +811,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
       <button class="btn-coming">練功區（即將推出）</button>
     </div>
   </div>
+  </div>
 </div>
 
 <!-- ── S9: Collection ── -->
 <div id="s-collection" class="screen">
+  <div class="top-bar-placeholder"></div>
   <div class="coll-header">
     <button class="coll-back" onclick="goTo('s-world')">←</button>
     <h2>我的收藏</h2>
@@ -805,6 +827,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 
 <!-- ── S10: Leaderboard ── -->
 <div id="s-leaderboard" class="screen">
+  <div class="top-bar-placeholder"></div>
   <div class="screen-hdr">
     <button class="screen-back" onclick="goTo('s-title')">←</button>
     <h2>星際排行榜</h2>
@@ -816,36 +839,38 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 
 <!-- ── S11: Friends ── -->
 <div id="s-friends" class="screen">
-  <div class="screen-hdr">
-    <button class="screen-back" onclick="goTo('s-title')">←</button>
-    <h2>好友</h2>
-  </div>
-  <div class="friend-tabs">
-    <button class="friend-tab active" onclick="switchFriendTab('list')">好友列表</button>
-    <button class="friend-tab" onclick="switchFriendTab('pending')">待確認</button>
-    <button class="friend-tab" onclick="switchFriendTab('add')">新增好友</button>
-  </div>
-  <div class="screen-content">
+  <div class="top-bar-placeholder"></div>
+  <div style="max-width:480px;margin:0 auto;padding:12px 16px 40px;width:100%;overflow-y:auto;flex:1">
     <div class="my-info-card" id="my-info-card"></div>
-    <div id="friend-panel-list" class="friend-panel active">
-      <div id="friends-list"></div>
+    <div class="acc-tab-bar">
+      <button class="acc-tab active" id="fr-tab-0" onclick="switchFrTab(0)">好友</button>
+      <button class="acc-tab" id="fr-tab-1" onclick="switchFrTab(1)">待確認</button>
+      <button class="acc-tab" id="fr-tab-2" onclick="switchFrTab(2)">新增</button>
+      <button class="acc-tab" id="fr-tab-3" onclick="switchFrTab(3)">對戰紀錄</button>
     </div>
-    <div id="friend-panel-pending" class="friend-panel">
-      <div id="pending-list"></div>
-    </div>
-    <div id="friend-panel-add" class="friend-panel">
-      <div class="search-row" style="margin-top:8px">
-        <input id="search-name-input" class="search-input" type="text" placeholder="輸入玩家名稱..."
-          onkeydown="if(event.key==='Enter') renderSearchResults(this.value)">
-        <button class="btn-search" onclick="renderSearchResults(document.getElementById('search-name-input').value)">搜尋</button>
+    <div id="fr-panel-0"><div id="friends-list"></div></div>
+    <div id="fr-panel-1" style="display:none"><div id="pending-list"></div></div>
+    <div id="fr-panel-2" style="display:none">
+      <div class="acc-card">
+        <div class="acc-label" style="margin-bottom:8px">輸入暱稱或玩家 ID（8碼）搜尋</div>
+        <div style="display:flex;gap:8px">
+          <input id="friend-search-input" type="text" placeholder="暱稱 或 玩家ID" class="acc-input" style="margin:0;flex:1">
+          <button onclick="doSearchPlayer()" class="acc-btn" style="width:auto;padding:10px 16px;margin:0">搜尋</button>
+        </div>
+        <div id="search-results" style="margin-top:12px"></div>
       </div>
-      <div id="search-results"></div>
+    </div>
+    <div id="fr-panel-3" style="display:none"><div id="battle-history-list"></div></div>
+    <div style="margin-top:16px">
+      <button onclick="goTo('s-title')" class="acc-btn acc-btn-secondary">返回主選單</button>
     </div>
   </div>
+  <div id="encourage-popup"></div>
 </div>
 
 <!-- ── S12: Daily Tasks ── -->
 <div id="s-tasks" class="screen">
+  <div class="top-bar-placeholder"></div>
   <div class="screen-hdr">
     <button class="screen-back" onclick="goTo('s-title')">←</button>
     <h2>每日任務</h2>
@@ -858,65 +883,142 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 
 <!-- ── S13: Account ── -->
 <div id="s-account" class="screen">
-  <div style="max-width:480px;margin:80px auto 0;padding:0 20px;width:100%">
-    <h2 style="color:#f8d000;text-align:center;margin-bottom:24px;font-family:'Orbitron',sans-serif">帳號設定</h2>
-    <div class="auth-card">
-      <p style="color:#aaa;font-size:13px;margin-bottom:4px">電子信箱</p>
-      <p id="account-email" style="color:#fff;margin-bottom:16px;font-size:14px"></p>
-      <p style="color:#aaa;font-size:13px;margin-bottom:4px">目前暱稱</p>
-      <p id="current-display-name" style="color:#f8d000;margin-bottom:12px;font-size:16px;font-weight:700"></p>
-      <input id="new-display-name" type="text" placeholder="輸入新暱稱" class="auth-input" style="margin-bottom:10px">
-      <button onclick="updateDisplayName()" class="btn-auth" style="margin-bottom:24px">儲存暱稱</button>
-      <hr style="border-color:rgba(255,255,255,0.1);margin-bottom:24px">
-      <input id="new-password" type="password" placeholder="新密碼（至少6字元）" class="auth-input" style="margin-bottom:10px">
-      <input id="confirm-password" type="password" placeholder="確認新密碼" class="auth-input" style="margin-bottom:10px">
-      <button onclick="updatePassword()" class="btn-auth">修改密碼</button>
+  <div class="top-bar-placeholder"></div>
+  <div style="max-width:480px;margin:0 auto;padding:16px 20px 40px;width:100%;overflow-y:auto;flex:1">
+    <h2 style="color:#f8d000;text-align:center;margin:12px 0 20px">帳號設定</h2>
+    <div class="acc-tab-bar">
+      <button class="acc-tab active" id="acc-tab-0" onclick="switchAccTab(0)">基本資料</button>
+      <button class="acc-tab" id="acc-tab-1" onclick="switchAccTab(1)">安全性</button>
+      <button class="acc-tab" id="acc-tab-2" onclick="switchAccTab(2)">個人化</button>
+      <button class="acc-tab" id="acc-tab-3" onclick="switchAccTab(3)">我的成就</button>
     </div>
-    <button onclick="goTo('s-title')" style="margin-top:16px;background:none;border:none;color:#aaa;cursor:pointer;width:100%;text-align:center;font-size:14px;font-family:'Noto Sans TC',sans-serif">返回主選單</button>
+
+    <!-- Tab 0：基本資料 -->
+    <div id="acc-panel-0">
+      <div class="acc-card">
+        <div class="acc-label">玩家 ID（讓朋友用這個找你）</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span id="acc-player-id" style="color:#f8d000;font-size:18px;font-weight:bold;letter-spacing:2px"></span>
+          <button onclick="copyPlayerId()" style="background:none;border:none;cursor:pointer;font-size:16px">📋</button>
+        </div>
+        <div class="acc-label">電子信箱</div>
+        <div id="acc-email" class="acc-value"></div>
+        <div class="acc-label">目前暱稱</div>
+        <div id="acc-current-name" class="acc-value"></div>
+        <input id="acc-new-name" type="text" placeholder="輸入新暱稱" class="acc-input">
+        <button onclick="updateDisplayName()" class="acc-btn">儲存暱稱</button>
+      </div>
+      <div class="acc-card">
+        <div class="acc-label" style="margin-bottom:12px">選擇頭像</div>
+        <div class="avatar-grid" id="avatar-grid">
+          <div class="avatar-option" data-avatar-id="hero1" onclick="selectAvatar('hero1',this)">⚔️<div style="font-size:11px;color:#aaa;margin-top:4px">劍士</div></div>
+          <div class="avatar-option" data-avatar-id="hero2" onclick="selectAvatar('hero2',this)">🏹<div style="font-size:11px;color:#aaa;margin-top:4px">弓箭手</div></div>
+          <div class="avatar-option" data-avatar-id="hero3" onclick="selectAvatar('hero3',this)">🔮<div style="font-size:11px;color:#aaa;margin-top:4px">法師</div></div>
+          <div class="avatar-option" data-avatar-id="hero4" onclick="selectAvatar('hero4',this)">🛡️<div style="font-size:11px;color:#aaa;margin-top:4px">聖騎士</div></div>
+          <div class="avatar-option" data-avatar-id="hero5" onclick="selectAvatar('hero5',this)">🐉<div style="font-size:11px;color:#aaa;margin-top:4px">龍騎士</div></div>
+          <div class="avatar-option" data-avatar-id="hero6" onclick="selectAvatar('hero6',this)">⚡<div style="font-size:11px;color:#aaa;margin-top:4px">雷霆俠</div></div>
+          <div class="avatar-option" data-avatar-id="hero7" onclick="selectAvatar('hero7',this)">🌙<div style="font-size:11px;color:#aaa;margin-top:4px">月影刺客</div></div>
+          <div class="avatar-option" data-avatar-id="hero8" onclick="selectAvatar('hero8',this)">🔥<div style="font-size:11px;color:#aaa;margin-top:4px">火焰術士</div></div>
+        </div>
+      </div>
+      <button onclick="goTo('s-title')" class="acc-btn acc-btn-secondary">返回主選單</button>
+    </div>
+
+    <!-- Tab 1：安全性 -->
+    <div id="acc-panel-1" style="display:none">
+      <div class="acc-card">
+        <div class="acc-label" style="margin-bottom:8px">忘記密碼？</div>
+        <button onclick="sendPasswordReset()" class="acc-btn acc-btn-secondary">寄送密碼重設信到信箱</button>
+      </div>
+      <div class="acc-card">
+        <div class="acc-label" style="margin-bottom:8px">修改密碼</div>
+        <input id="acc-new-password" type="password" placeholder="新密碼（至少6字元）" class="acc-input">
+        <input id="acc-confirm-password" type="password" placeholder="確認新密碼" class="acc-input">
+        <button onclick="updatePassword()" class="acc-btn">修改密碼</button>
+      </div>
+      <div class="acc-card">
+        <div class="acc-label" style="margin-bottom:8px;color:#f44336">危險區域</div>
+        <button onclick="requestDeleteAccount()" class="acc-btn acc-btn-danger">刪除帳號</button>
+      </div>
+      <button onclick="goTo('s-title')" class="acc-btn acc-btn-secondary">返回主選單</button>
+    </div>
+
+    <!-- Tab 2：個人化 -->
+    <div id="acc-panel-2" style="display:none">
+      <div class="acc-card">
+        <div class="acc-label" style="margin-bottom:12px">音效設定</div>
+        <button id="sound-toggle" onclick="toggleSound()" class="acc-btn acc-btn-secondary" style="font-size:18px"></button>
+      </div>
+      <button onclick="goTo('s-title')" class="acc-btn acc-btn-secondary">返回主選單</button>
+    </div>
+
+    <!-- Tab 3：我的成就 -->
+    <div id="acc-panel-3" style="display:none">
+      <div class="acc-card" style="text-align:center">
+        <div class="acc-label">累積星星碎片</div>
+        <div id="achievement-stars" style="color:#f8d000;font-size:36px;font-weight:bold;margin:8px 0"></div>
+      </div>
+      <div class="acc-card">
+        <div class="acc-label" style="margin-bottom:12px">各關卡最佳紀錄</div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <tr style="color:#aaa;border-bottom:1px solid rgba(255,255,255,0.1)">
+            <th style="text-align:left;padding:6px 4px">關卡</th>
+            <th style="padding:6px 4px">評級</th>
+            <th style="padding:6px 4px">寶物</th>
+            <th style="padding:6px 4px">最高分</th>
+          </tr>
+          <tbody id="achievement-table"></tbody>
+        </table>
+      </div>
+      <button onclick="goTo('s-title')" class="acc-btn acc-btn-secondary">返回主選單</button>
+    </div>
   </div>
 </div>
 
 <!-- ── S14: Battle Waiting ── -->
 <div id="s-battle-waiting" class="screen">
-  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:24px;padding:20px">
-    <div style="font-size:60px">⏳</div>
-    <p id="battle-waiting-msg" style="color:#f8d000;font-size:20px;text-align:center;line-height:1.6"></p>
-    <button onclick="goTo('s-title')" style="background:rgba(255,255,255,0.1);color:#fff;border:none;border-radius:10px;padding:12px 24px;cursor:pointer;font-size:14px;font-family:'Noto Sans TC',sans-serif">取消</button>
+  <div class="top-bar-placeholder"></div>
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:calc(100vh - 44px);gap:24px;padding:20px">
+    <div style="font-size:64px">⏳</div>
+    <p id="battle-waiting-msg" style="color:#f8d000;font-size:20px;text-align:center"></p>
+    <button onclick="goTo('s-title')" style="background:rgba(255,255,255,0.1);color:#fff;border:none;border-radius:10px;padding:12px 28px;cursor:pointer;font-size:16px">取消</button>
   </div>
 </div>
 
 <!-- ── S15: Battle ── -->
 <div id="s-battle" class="screen">
-  <div style="display:flex;flex-direction:column;height:100%">
-    <div style="background:rgba(220,50,50,0.3);padding:16px;text-align:center;flex-shrink:0">
-      <p style="color:#ff6b6b;font-size:13px;margin-bottom:4px">對手分數</p>
-      <p id="battle-opponent-score" style="color:#fff;font-size:36px;font-weight:bold;margin:0">0</p>
+  <div style="display:flex;flex-direction:column;height:100vh">
+    <div style="background:rgba(220,50,50,0.2);padding:20px;text-align:center;border-bottom:1px solid rgba(220,50,50,0.3)">
+      <p style="color:#ff6b6b;font-size:13px;margin:0">對手分數</p>
+      <p id="battle-opponent-score" style="color:#fff;font-size:52px;font-weight:bold;margin:4px 0">0</p>
     </div>
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px">
       <p id="battle-progress" style="color:#aaa;font-size:14px;margin:0"></p>
-      <p id="battle-question" style="color:#fff;font-size:clamp(32px,7vw,52px);font-weight:bold;text-align:center;margin:0;font-family:'Orbitron',sans-serif"></p>
+      <p id="battle-question" style="color:#fff;font-size:52px;font-weight:bold;text-align:center;margin:0;line-height:1.2"></p>
       <input id="battle-answer-input" type="number" placeholder="答案"
-        style="font-size:32px;text-align:center;background:rgba(255,255,255,0.1);border:2px solid rgba(255,215,0,0.5);border-radius:12px;color:#fff;padding:12px;width:180px;outline:none"
+        style="font-size:36px;text-align:center;background:rgba(255,255,255,0.1);border:2px solid rgba(255,215,0,0.5);border-radius:12px;color:#fff;padding:12px;width:200px;outline:none"
         onkeydown="if(event.key==='Enter') submitBattleAnswer()">
       <button onclick="submitBattleAnswer()"
-        style="background:linear-gradient(135deg,#f5a623,#f8d000);color:#1a1a2e;border:none;border-radius:12px;padding:14px 40px;font-size:18px;font-weight:bold;cursor:pointer;font-family:'Noto Sans TC',sans-serif">確認</button>
+        style="background:linear-gradient(135deg,#f5a623,#f8d000);color:#1a1a2e;border:none;border-radius:12px;padding:14px 52px;font-size:20px;font-weight:bold;cursor:pointer">確認</button>
     </div>
-    <div style="background:rgba(50,100,220,0.3);padding:16px;text-align:center;flex-shrink:0">
-      <p style="color:#6b9fff;font-size:13px;margin-bottom:4px">我的分數</p>
-      <p id="battle-my-score" style="color:#fff;font-size:36px;font-weight:bold;margin:0">0</p>
+    <div style="background:rgba(50,100,220,0.2);padding:20px;text-align:center;border-top:1px solid rgba(50,100,220,0.3)">
+      <p style="color:#6b9fff;font-size:13px;margin:0">我的分數</p>
+      <p id="battle-my-score" style="color:#fff;font-size:52px;font-weight:bold;margin:4px 0">0</p>
     </div>
   </div>
 </div>
 
 <!-- ── S16: Battle Result ── -->
 <div id="s-battle-result" class="screen">
-  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:20px;padding:20px">
-    <h2 id="battle-result-title" style="color:#f8d000;font-size:36px;margin:0;font-family:'Orbitron',sans-serif"></h2>
-    <p id="battle-result-score" style="color:#fff;font-size:48px;font-weight:bold;margin:0;font-family:'Orbitron',sans-serif"></p>
+  <div class="top-bar-placeholder"></div>
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:calc(100vh - 44px);gap:20px;padding:20px">
+    <h2 id="battle-result-title" style="color:#f8d000;font-size:42px;margin:0"></h2>
+    <p id="battle-result-score" style="color:#fff;font-size:60px;font-weight:bold;margin:0"></p>
+    <p style="color:#aaa;font-size:14px;margin:0">勝利+10⭐　平局+3⭐</p>
     <button onclick="loadFriendsScreen();goTo('s-friends')"
-      style="background:linear-gradient(135deg,#e91e63,#c2185b);color:#fff;border:none;border-radius:12px;padding:14px 32px;font-size:16px;cursor:pointer;margin-top:16px;font-family:'Noto Sans TC',sans-serif">再來一場</button>
+      style="background:linear-gradient(135deg,#e91e63,#c2185b);color:#fff;border:none;border-radius:12px;padding:14px 0;font-size:16px;cursor:pointer;width:220px;margin-top:16px">再來一場</button>
     <button onclick="goTo('s-title')"
-      style="background:rgba(255,255,255,0.1);color:#fff;border:none;border-radius:12px;padding:14px 32px;font-size:16px;cursor:pointer;font-family:'Noto Sans TC',sans-serif">回主選單</button>
+      style="background:rgba(255,255,255,0.1);color:#fff;border:none;border-radius:12px;padding:14px 0;font-size:16px;cursor:pointer;width:220px">回主選單</button>
   </div>
 </div>
 
@@ -991,9 +1093,36 @@ async function loadOrCreateChild() {
   }
 }
 
+const AVATAR_MAP = {
+  'hero1':'⚔️','hero2':'🏹','hero3':'🔮','hero4':'🛡️',
+  'hero5':'🐉','hero6':'⚡','hero7':'🌙','hero8':'🔥'
+};
+function getAvatar(id){ return AVATAR_MAP[id]||'⚔️'; }
+
+const ENCOURAGE_MSGS = [
+  '你好棒！繼續加油！💪',
+  '一起變成數學高手！🌟',
+  '今天也要努力喔！⚡',
+  '你是最強的召喚師！🏆',
+  '加油！我在幫你應援！🎉'
+];
+
+function renderTopBar() {
+  const name = currentPlayer ? currentPlayer.display_name : '';
+  return `<div class="top-bar">
+    <div class="top-bar-left">
+      <button class="btn-top-collection" onclick="goTo('s-collection')">我的收藏</button>
+    </div>
+    <div class="top-bar-right">
+      <span class="top-bar-username">${name}</span>
+      <button class="btn-top-signout" onclick="authSignOut()">登出</button>
+    </div>
+  </div>`;
+}
+
 function updateUserDisplay() {
-  document.querySelectorAll('.user-display').forEach(el => {
-    if (currentPlayer) el.textContent = currentPlayer.display_name;
+  document.querySelectorAll('.top-bar-placeholder').forEach(el => {
+    el.innerHTML = renderTopBar();
   });
   refreshStarsDisplay();
 }
@@ -1086,10 +1215,13 @@ async function authSignIn() {
   await syncFromCloud();
   checkLoginStreak();
   initDailyTasks();
+  checkBattleInvites();
+  db.from('players').update({is_online:true,last_seen:new Date().toISOString()}).eq('id',currentUser.id);
   goTo('s-title');
 }
 
 async function authSignOut() {
+  if(currentUser) await db.from('players').update({is_online:false}).eq('id',currentUser.id);
   await db.auth.signOut();
   currentUser = null;
   currentPlayer = null;
@@ -1543,6 +1675,7 @@ function tone(f,d,t='sine',v=0.3,a=0.01){
   }catch(e){}
 }
 function sfx(n){
+  if(localStorage.getItem('sound_on')==='false') return;
   if(n==='correct'){tone(880,.1,'sine',.4);setTimeout(()=>tone(1320,.15,'sine',.3),80);}
   else if(n==='wrong'){tone(180,.4,'sawtooth',.25);}
   else if(n==='fail'){[440,370,310,250].forEach((f,i)=>setTimeout(()=>tone(f,.25,'sine',.3),i*130));}
@@ -2276,167 +2409,384 @@ function renderLeaderboard(data) {
 // ═══════════════════════════════════════════════
 // FRIENDS
 // ═══════════════════════════════════════════════
-function switchFriendTab(tab) {
-  const tabs = ['list','pending','add'];
-  document.querySelectorAll('.friend-tab').forEach((t, i) => {
-    t.classList.toggle('active', tabs[i] === tab);
-  });
-  document.querySelectorAll('.friend-panel').forEach(p => p.classList.remove('active'));
-  const panel = document.getElementById('friend-panel-' + tab);
-  if (panel) panel.classList.add('active');
+function switchFrTab(idx) {
+  for(let i=0;i<4;i++){
+    document.getElementById('fr-tab-'+i).className='acc-tab'+(i===idx?' active':'');
+    document.getElementById('fr-panel-'+i).style.display=i===idx?'block':'none';
+  }
+  if(idx===3) loadBattleHistory();
 }
 
-async function searchPlayer(name) {
-  if (!currentUser || !name.trim()) return [];
-  const { data, error } = await db.from('players').select('id, display_name')
-    .ilike('display_name', `%${name.trim()}%`).neq('id', currentUser.id).limit(5);
-  if (error) { console.error('searchPlayer error:', error); return []; }
-  return data || [];
+async function loadFriendsScreen() {
+  if(!currentUser) return;
+  db.from('players').update({is_online:true,last_seen:new Date().toISOString()}).eq('id',currentUser.id);
+
+  const {data:accepted} = await db
+    .from('friendships')
+    .select('id, requester:players!requester_id(id,display_name,avatar_id,is_online), receiver:players!receiver_id(id,display_name,avatar_id,is_online)')
+    .or(`requester_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`)
+    .eq('status','accepted');
+
+  const {data:pending} = await db
+    .from('friendships')
+    .select('id, requester:players!requester_id(id,display_name,avatar_id)')
+    .eq('receiver_id',currentUser.id)
+    .eq('status','pending');
+
+  const encouragements = await loadEncouragements();
+
+  renderFriendsList(accepted||[]);
+  renderPendingList(pending||[], encouragements);
+
+  const shortId = currentUser.id.replace(/-/g,'').substring(0,8).toUpperCase();
+  const myStars = localStorage.getItem('mc_stars')||'0';
+  const myAvatar = getAvatar(currentPlayer ? currentPlayer.avatar_id : '');
+  const myInfoEl = document.getElementById('my-info-card');
+  if(myInfoEl && currentPlayer){
+    myInfoEl.innerHTML =
+      `<span style="font-size:28px">${myAvatar}</span>
+       <div>
+         <div style="color:#f8d000;font-weight:bold;font-size:15px">${currentPlayer.display_name} <span style="color:#4CAF50;font-size:11px">● 在線</span></div>
+         <div style="color:#aaa;font-size:12px;margin-top:2px">ID：${shortId} <span onclick="copyFriendId('${shortId}')" style="cursor:pointer">📋</span></div>
+         <div style="color:#aaa;font-size:12px;margin-top:2px">⭐ ${myStars} 顆星星碎片</div>
+       </div>`;
+  }
+  switchFrTab(0);
+}
+
+function copyFriendId(id) {
+  navigator.clipboard.writeText(id).then(()=>showToast('✅ 玩家 ID 已複製！'));
+}
+
+function renderFriendsList(data) {
+  const el = document.getElementById('friends-list');
+  if(!el) return;
+  if(!data||!data.length){el.innerHTML='<p style="color:#aaa;text-align:center;padding:24px">還沒有好友，去新增吧！</p>';return;}
+  el.innerHTML = data.map(f=>{
+    const friend = f.requester.id===currentUser.id?f.receiver:f.requester;
+    const fid = f.id;
+    const dot = friend.is_online
+      ?'<span style="color:#4CAF50;font-size:11px">● 在線</span>'
+      :'<span style="color:#555;font-size:11px">● 離線</span>';
+    return `<div class="friend-row">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+        <span style="font-size:22px">${getAvatar(friend.avatar_id)}</span>
+        <div style="min-width:0"><div class="friend-name">${friend.display_name} ${dot}</div></div>
+      </div>
+      <div style="display:flex;gap:5px;flex-shrink:0">
+        <button onclick="challengeFriend('${friend.id}','${friend.display_name}')" class="btn-challenge-active">⚔️</button>
+        <button onclick="sendEncouragement('${friend.id}','${friend.display_name}')" class="btn-encourage">💌</button>
+        <button onclick="deleteFriend('${fid}')" class="btn-delete-friend">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderPendingList(pendingData, encouragements) {
+  const el = document.getElementById('pending-list');
+  if(!el) return;
+  let html = '';
+  if(!pendingData.length&&!encouragements.length){
+    el.innerHTML='<p style="color:#aaa;text-align:center;padding:24px">沒有待確認的項目</p>';return;
+  }
+  if(encouragements.length){
+    html+=`<p style="color:#f8d000;font-size:13px;margin:0 0 8px">💌 收到的鼓勵訊息</p>`;
+    html+=encouragements.map(e=>
+      `<div class="acc-card" style="cursor:pointer;margin-bottom:8px" onclick="markEncouragementRead('${e.id}');this.style.opacity='0.5'">
+        <span style="font-size:18px">${getAvatar(e.sender?.avatar_id)}</span>
+        <strong style="color:#f8d000">${e.sender?.display_name||'玩家'}</strong>：
+        <span style="color:#fff">${e.message}</span>
+      </div>`
+    ).join('');
+  }
+  if(pendingData.length){
+    html+=`<p style="color:#f8d000;font-size:13px;margin:12px 0 8px">好友邀請</p>`;
+    html+=pendingData.map(f=>
+      `<div class="friend-row">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:20px">${getAvatar(f.requester?.avatar_id)}</span>
+          <span class="friend-name">${f.requester.display_name}</span>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button onclick="acceptFriend('${f.id}')" class="btn-accept">接受</button>
+          <button onclick="declineFriend('${f.id}')" class="btn-decline">拒絕</button>
+        </div>
+      </div>`
+    ).join('');
+  }
+  el.innerHTML = html;
+}
+
+async function loadEncouragements() {
+  const {data} = await db
+    .from('encouragements')
+    .select('*, sender:players!sender_id(display_name,avatar_id)')
+    .eq('receiver_id',currentUser.id)
+    .eq('is_read',false)
+    .order('created_at',{ascending:false});
+  return data||[];
+}
+
+async function markEncouragementRead(id) {
+  await db.from('encouragements').update({is_read:true}).eq('id',id);
 }
 
 async function getMyFriendIds() {
-  const { data } = await db.from('friendships')
-    .select('requester_id, receiver_id')
+  const {data} = await db.from('friendships')
+    .select('requester_id,receiver_id')
     .or(`requester_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`)
-    .eq('status', 'accepted');
-  if (!data) return [];
-  return data.map(f => f.requester_id === currentUser.id ? f.receiver_id : f.requester_id);
+    .eq('status','accepted');
+  if(!data) return [];
+  return data.map(f=>f.requester_id===currentUser.id?f.receiver_id:f.requester_id);
 }
 
 async function getPendingSentIds() {
-  const { data } = await db.from('friendships')
-    .select('receiver_id').eq('requester_id', currentUser.id).eq('status', 'pending');
-  if (!data) return [];
-  return data.map(f => f.receiver_id);
+  const {data} = await db.from('friendships')
+    .select('receiver_id')
+    .eq('requester_id',currentUser.id)
+    .eq('status','pending');
+  if(!data) return [];
+  return data.map(f=>f.receiver_id);
 }
 
-async function renderSearchResults(name) {
-  const resultsEl = document.getElementById('search-results');
-  if (!resultsEl) return;
-  if (!name || !name.trim()) { resultsEl.innerHTML = '<p style="color:#aaa">請輸入名稱</p>'; return; }
-  resultsEl.innerHTML = '<p style="color:#aaa">搜尋中...</p>';
-  const results = await searchPlayer(name);
-  if (!results.length) {
-    resultsEl.innerHTML = '<p style="color:#aaa">找不到玩家，請確認暱稱是否正確</p>'; return;
+async function searchPlayer(query) {
+  if(!currentUser||!query.trim()) return [];
+  query = query.trim();
+  let result = [];
+  if(query.length===8&&/^[A-F0-9]+$/i.test(query)){
+    const {data} = await db.from('players').select('id,display_name,avatar_id').neq('id',currentUser.id).limit(20);
+    result = (data||[]).filter(p=>p.id.replace(/-/g,'').substring(0,8).toUpperCase()===query.toUpperCase());
   }
+  if(!result.length){
+    const {data} = await db.from('players').select('id,display_name,avatar_id')
+      .ilike('display_name',`%${query}%`).neq('id',currentUser.id).limit(5);
+    result = data||[];
+  }
+  return result;
+}
+
+async function doSearchPlayer() {
+  const query = document.getElementById('friend-search-input').value;
+  const resultsEl = document.getElementById('search-results');
+  if(!query.trim()){showToast('請輸入暱稱或玩家 ID');return;}
+  resultsEl.innerHTML='<p style="color:#aaa">搜尋中...</p>';
+  const results = await searchPlayer(query);
+  if(!results.length){resultsEl.innerHTML='<p style="color:#aaa">找不到玩家，請確認暱稱或 ID 是否正確</p>';return;}
   const friendIds = await getMyFriendIds();
   const sentIds = await getPendingSentIds();
-  resultsEl.innerHTML = results.map(p => {
-    const isFriend = friendIds.includes(p.id);
-    const isSent = sentIds.includes(p.id);
-    const btnHtml = isFriend
-      ? `<button disabled class="btn-friend-status">已是好友</button>`
-      : isSent
-        ? `<button disabled class="btn-friend-status">已送出</button>`
-        : `<button onclick="sendFriendRequest('${p.id}',this)" class="btn-send-request">送出邀請</button>`;
-    return `<div class="friend-row"><span class="friend-name">${p.display_name}</span>${btnHtml}</div>`;
+  resultsEl.innerHTML = results.map(p=>{
+    const isFriend=friendIds.includes(p.id);
+    const isSent=sentIds.includes(p.id);
+    const btn=isFriend
+      ?`<button disabled class="btn-friend-status">已是好友</button>`
+      :isSent
+        ?`<button disabled class="btn-friend-status">已送出</button>`
+        :`<button onclick="sendFriendRequest('${p.id}',this)" class="btn-send-request">送出邀請</button>`;
+    return `<div class="friend-row">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:20px">${getAvatar(p.avatar_id)}</span>
+        <span class="friend-name">${p.display_name}</span>
+      </div>
+      ${btn}
+    </div>`;
   }).join('');
 }
 
 async function sendFriendRequest(receiverId, btn) {
-  if (!currentUser) return;
-  if (btn) { btn.disabled = true; btn.textContent = '送出中...'; }
-  const { error } = await db.from('friendships').insert({
-    requester_id: currentUser.id, receiver_id: receiverId, status: 'pending'
+  if(!currentUser) return;
+  if(btn){btn.disabled=true;btn.textContent='送出中...';}
+  const {error} = await db.from('friendships').insert({
+    requester_id:currentUser.id,receiver_id:receiverId,status:'pending'
   });
-  if (error) {
-    const msg = error.message.includes('duplicate') ? '已送出過邀請' : '送出失敗';
-    if (btn) btn.textContent = msg; else showToast(msg);
+  if(error){
+    const msg=error.message.includes('duplicate')?'已送出過邀請':'送出失敗';
+    if(btn) btn.textContent=msg;
   } else {
-    if (btn) btn.textContent = '已送出'; else showToast('邀請已送出！');
+    if(btn) btn.textContent='已送出';
+    showToast('邀請已送出！');
   }
 }
 
 async function acceptFriend(friendshipId) {
-  await db.from('friendships').update({ status: 'accepted' }).eq('id', friendshipId);
+  await db.from('friendships').update({status:'accepted'}).eq('id',friendshipId);
   showToast('✅ 已接受好友邀請！');
   loadFriendsScreen();
 }
 
 async function declineFriend(friendshipId) {
-  await db.from('friendships').update({ status: 'declined' }).eq('id', friendshipId);
+  await db.from('friendships').update({status:'declined'}).eq('id',friendshipId);
   loadFriendsScreen();
 }
 
-async function loadFriendsScreen() {
-  if (!currentUser) return;
-  const { data: accepted } = await db.from('friendships')
-    .select('id, requester:players!requester_id(id,display_name), receiver:players!receiver_id(id,display_name)')
-    .or(`requester_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`)
-    .eq('status', 'accepted');
-  const { data: pending } = await db.from('friendships')
-    .select('id, requester:players!requester_id(id,display_name)')
-    .eq('receiver_id', currentUser.id).eq('status', 'pending');
-  renderFriendsList(accepted || []);
-  renderPendingList(pending || []);
-  const myCard = document.getElementById('my-info-card');
-  if (myCard && currentPlayer) {
-    myCard.textContent = `⚔️ ${currentPlayer.display_name}　｜　⭐ ${localStorage.getItem('mc_stars')||0} 顆`;
-  }
+async function deleteFriend(friendshipId) {
+  if(!confirm('確定要刪除這位好友嗎？')) return;
+  await db.from('friendships').delete().eq('id',friendshipId);
+  showToast('已刪除好友');
+  loadFriendsScreen();
 }
 
-function renderFriendsList(data) {
-  const el = document.getElementById('friends-list');
-  if (!el) return;
-  if (!data || !data.length) { el.innerHTML = '<p style="color:#aaa;text-align:center;padding:20px">還沒有好友，去新增吧！</p>'; return; }
-  el.innerHTML = data.map(f => {
-    const friend = f.requester?.id === currentUser?.id ? f.receiver : f.requester;
-    return `<div class="friend-row">
-      <span class="friend-name">${friend?.display_name||'玩家'}</span>
-      <button onclick="challengeFriend('${friend?.id}','${friend?.display_name}')" class="btn-challenge-active">⚔️ 挑戰</button>
+async function sendEncouragement(friendId, friendName) {
+  const overlay = document.createElement('div');
+  overlay.className = 'encourage-overlay';
+  overlay.innerHTML = `<div class="encourage-box">
+    <p style="color:#f8d000;margin:0 0 14px;font-size:15px">傳送鼓勵給 ${friendName}</p>
+    ${ENCOURAGE_MSGS.map(m=>
+      `<button class="encourage-msg-btn" onclick="confirmEncouragement('${friendId}','${m.replace(/'/g,"\\'")}',this.closest('.encourage-overlay'))">${m}</button>`
+    ).join('')}
+    <button onclick="this.closest('.encourage-overlay').remove()" class="acc-btn acc-btn-secondary" style="margin-top:4px">取消</button>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function confirmEncouragement(receiverId, message, overlay) {
+  if(overlay) overlay.remove();
+  const {error} = await db.from('encouragements').insert({
+    sender_id:currentUser.id,receiver_id:receiverId,message:message
+  });
+  if(error) showToast('傳送失敗');
+  else showToast('💌 鼓勵訊息已送出！');
+}
+
+async function loadBattleHistory() {
+  const el = document.getElementById('battle-history-list');
+  if(!el) return;
+  el.innerHTML = '<p style="color:#aaa;text-align:center;padding:12px">載入中...</p>';
+  const {data} = await db
+    .from('battle_rooms')
+    .select('*, player1:players!player1_id(display_name,avatar_id), player2:players!player2_id(display_name,avatar_id)')
+    .or(`player1_id.eq.${currentUser.id},player2_id.eq.${currentUser.id}`)
+    .eq('player1_finished',true)
+    .eq('player2_finished',true)
+    .order('created_at',{ascending:false})
+    .limit(10);
+  if(!data||!data.length){el.innerHTML='<p style="color:#aaa;text-align:center;padding:24px">還沒有對戰紀錄</p>';return;}
+  el.innerHTML = data.map(r=>{
+    const isP1=r.player1_id===currentUser.id;
+    const myScore=isP1?r.player1_score:r.player2_score;
+    const opScore=isP1?r.player2_score:r.player1_score;
+    const opponent=isP1?r.player2:r.player1;
+    const result=myScore>opScore?'🏆 勝':myScore<opScore?'😢 敗':'🤝 平';
+    const color=myScore>opScore?'#4CAF50':myScore<opScore?'#f44336':'#f8d000';
+    const date=new Date(r.created_at).toLocaleDateString('zh-TW');
+    return `<div class="friend-row" style="flex-wrap:wrap;gap:4px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:20px">${getAvatar(opponent?.avatar_id)}</span>
+        <span class="friend-name">${opponent?.display_name||'未知玩家'}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="color:${color};font-weight:bold">${result}</span>
+        <span style="color:#aaa;font-size:13px">${myScore}:${opScore}</span>
+        <span style="color:#555;font-size:12px">${date}</span>
+      </div>
     </div>`;
   }).join('');
-}
-
-function renderPendingList(data) {
-  const el = document.getElementById('pending-list');
-  if (!el) return;
-  if (!data || !data.length) { el.innerHTML = '<p style="color:#aaa;text-align:center;padding:20px">沒有待確認的邀請</p>'; return; }
-  el.innerHTML = data.map(f =>
-    `<div class="friend-row">
-      <span class="friend-name">${f.requester?.display_name||'玩家'}</span>
-      <button onclick="acceptFriend('${f.id}')" class="btn-accept">接受</button>
-      <button onclick="declineFriend('${f.id}')" class="btn-decline">拒絕</button>
-    </div>`
-  ).join('');
 }
 
 // ═══════════════════════════════════════════════
 // ACCOUNT MANAGEMENT
 // ═══════════════════════════════════════════════
+function switchAccTab(idx) {
+  for(let i=0;i<4;i++){
+    document.getElementById('acc-tab-'+i).className='acc-tab'+(i===idx?' active':'');
+    document.getElementById('acc-panel-'+i).style.display=i===idx?'block':'none';
+  }
+}
+
 function openAccountScreen() {
-  if (!currentUser || !currentPlayer) return;
-  document.getElementById('account-email').textContent = currentUser.email;
-  document.getElementById('current-display-name').textContent = currentPlayer.display_name;
-  document.getElementById('new-display-name').value = '';
-  document.getElementById('new-password').value = '';
-  document.getElementById('confirm-password').value = '';
+  if(!currentUser||!currentPlayer) return;
+  const shortId = currentUser.id.replace(/-/g,'').substring(0,8).toUpperCase();
+  document.getElementById('acc-player-id').textContent = shortId;
+  document.getElementById('acc-email').textContent = currentUser.email;
+  document.getElementById('acc-current-name').textContent = currentPlayer.display_name;
+  const soundOn = localStorage.getItem('sound_on') !== 'false';
+  document.getElementById('sound-toggle').textContent = soundOn ? '🔊 音效開啟' : '🔇 音效關閉';
+  document.querySelectorAll('.avatar-option').forEach(el => {
+    el.classList.toggle('avatar-selected', el.dataset.avatarId === (currentPlayer.avatar_id||'hero1'));
+  });
+  switchAccTab(0);
+  renderAchievements();
   goTo('s-account');
 }
 
 async function updateDisplayName() {
-  const newName = document.getElementById('new-display-name').value.trim();
-  if (!newName) { showToast('請輸入新暱稱'); return; }
-  const { error } = await db.from('players').update({ display_name: newName }).eq('id', currentUser.id);
-  if (error) { showToast('修改失敗：' + error.message); return; }
+  const newName = document.getElementById('acc-new-name').value.trim();
+  if(!newName){showToast('請輸入新暱稱');return;}
+  const {error} = await db.from('players').update({display_name:newName}).eq('id',currentUser.id);
+  if(error){showToast('修改失敗：'+error.message);return;}
   currentPlayer.display_name = newName;
   updateUserDisplay();
+  document.getElementById('acc-current-name').textContent = newName;
+  document.getElementById('acc-new-name').value = '';
   showToast('✅ 暱稱已更新！');
-  document.getElementById('new-display-name').value = '';
-  document.getElementById('current-display-name').textContent = newName;
 }
 
 async function updatePassword() {
-  const newPw = document.getElementById('new-password').value;
-  const confirmPw = document.getElementById('confirm-password').value;
-  if (!newPw || !confirmPw) { showToast('請填寫所有欄位'); return; }
-  if (newPw.length < 6) { showToast('密碼至少需要 6 個字元'); return; }
-  if (newPw !== confirmPw) { showToast('兩次密碼不一致'); return; }
-  const { error } = await db.auth.updateUser({ password: newPw });
-  if (error) { showToast('修改失敗：' + error.message); return; }
+  const newPw = document.getElementById('acc-new-password').value;
+  const confirmPw = document.getElementById('acc-confirm-password').value;
+  if(!newPw||!confirmPw){showToast('請填寫所有欄位');return;}
+  if(newPw.length<6){showToast('密碼至少需要 6 個字元');return;}
+  if(newPw!==confirmPw){showToast('兩次密碼不一致');return;}
+  const {error} = await db.auth.updateUser({password:newPw});
+  if(error){showToast('修改失敗：'+error.message);return;}
+  document.getElementById('acc-new-password').value='';
+  document.getElementById('acc-confirm-password').value='';
   showToast('✅ 密碼已更新！');
-  document.getElementById('new-password').value = '';
-  document.getElementById('confirm-password').value = '';
+}
+
+async function sendPasswordReset() {
+  const {error} = await db.auth.resetPasswordForEmail(
+    currentUser.email,
+    {redirectTo:'https://math-hero-game.vercel.app'}
+  );
+  if(error) showToast('寄送失敗：'+error.message);
+  else showToast('✅ 重設信已寄出，請查收信箱！');
+}
+
+function requestDeleteAccount() {
+  const input = prompt('確定要刪除帳號嗎？此操作無法復原。\n請輸入「確認刪除」來確認：');
+  if(input==='確認刪除'){
+    showToast('請聯繫客服處理帳號刪除：support@math-hero-game.com');
+  }
+}
+
+async function selectAvatar(avatarId, el) {
+  document.querySelectorAll('.avatar-option').forEach(e=>e.classList.remove('avatar-selected'));
+  el.classList.add('avatar-selected');
+  currentPlayer.avatar_id = avatarId;
+  await db.from('players').update({avatar_id:avatarId}).eq('id',currentUser.id);
+  showToast('✅ 頭像已更新！');
+}
+
+async function toggleSound() {
+  const newVal = localStorage.getItem('sound_on')==='false';
+  localStorage.setItem('sound_on', String(newVal));
+  if(currentPlayer) {
+    currentPlayer.sound_on = newVal;
+    await db.from('players').update({sound_on:newVal}).eq('id',currentUser.id);
+  }
+  document.getElementById('sound-toggle').textContent = newVal?'🔊 音效開啟':'🔇 音效關閉';
+  showToast(newVal?'音效已開啟':'音效已關閉');
+}
+
+function copyPlayerId() {
+  const id = document.getElementById('acc-player-id').textContent;
+  navigator.clipboard.writeText(id).then(()=>showToast('✅ 玩家 ID 已複製！'));
+}
+
+function renderAchievements() {
+  document.getElementById('achievement-stars').textContent = localStorage.getItem('mc_stars')||'0';
+  const rows=[];
+  for(let i=1;i<=18;i++){
+    const raw=localStorage.getItem('mc_lv_'+i);
+    const d=raw?JSON.parse(raw):null;
+    rows.push(`<tr style="border-bottom:1px solid rgba(255,255,255,0.05)">
+      <td style="color:#aaa;padding:6px 4px">第${i}關</td>
+      <td style="color:#f8d000;text-align:center;padding:6px 4px">${d?d.grade||'-':'-'}</td>
+      <td style="text-align:center;padding:6px 4px">${d&&d.treasure?'💎':'-'}</td>
+      <td style="color:#aaa;text-align:center;padding:6px 4px">${d?d.score||0:0}</td>
+    </tr>`);
+  }
+  document.getElementById('achievement-table').innerHTML=rows.join('');
 }
 
 // ═══════════════════════════════════════════════
@@ -2563,17 +2913,17 @@ async function showBattleResult() {
 }
 
 async function checkBattleInvites() {
-  if (!currentUser) return;
+  if(!currentUser) return;
   try {
-    const { data } = await db.from('battle_rooms')
-      .select('*, player1:players!player1_id(display_name)')
-      .eq('player2_id', currentUser.id).eq('status', 'waiting');
-    if (data && data.length > 0) {
-      const room = data[0];
-      const accept = confirm(`⚔️ ${room.player1?.display_name||'玩家'} 向你發出對戰挑戰，要接受嗎？`);
-      if (accept) acceptBattle(room.id);
+    const {data} = await db.from('battle_rooms')
+      .select('*, player1:players!player1_id(display_name,avatar_id)')
+      .eq('player2_id',currentUser.id).eq('status','waiting');
+    if(data&&data.length>0){
+      const room=data[0];
+      const accept=confirm(`${getAvatar(room.player1?.avatar_id)} ${room.player1?.display_name||'玩家'} 向你發出對戰挑戰，要接受嗎？`);
+      if(accept) acceptBattle(room.id);
     }
-  } catch(e) { console.error('checkBattleInvites:', e); }
+  } catch(e){console.error('checkBattleInvites:',e);}
 }
 
 // ═══════════════════════════════════════════════
