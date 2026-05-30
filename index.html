@@ -519,6 +519,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 .task-progress-bar div{background:gold;border-radius:10px;height:100%;transition:width 0.3s}
 .task-meta{color:#aaa;font-size:13px}
 .task-status{color:gold;font-size:13px;margin-top:4px}
+@keyframes slideDown{from{opacity:0;transform:translateX(-50%) translateY(-20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 
 /* ── Top Bar ── */
 .top-bar-placeholder{width:100%;flex-shrink:0}
@@ -1035,6 +1036,7 @@ let currentPlayer = null;
 let currentChild = null;
 let battleRoom = null;
 let battleChannel = null;
+let battleInviteChannel = null;
 let battleQuestions = [];
 let battleCurrentQ = 0;
 let battleMyScore = 0;
@@ -1054,6 +1056,7 @@ async function initAuth() {
     checkLoginStreak();
     initDailyTasks();
     checkBattleInvites();
+    subscribeToBattleInvites();
     goTo('s-title');
   } else {
     goTo('s-auth');
@@ -1181,6 +1184,7 @@ async function authSignUp() {
     checkLoginStreak();
     initDailyTasks();
     checkBattleInvites();
+    subscribeToBattleInvites();
     goTo('s-title');
 
   } catch(e) {
@@ -1216,12 +1220,15 @@ async function authSignIn() {
   checkLoginStreak();
   initDailyTasks();
   checkBattleInvites();
+  subscribeToBattleInvites();
   db.from('players').update({is_online:true,last_seen:new Date().toISOString()}).eq('id',currentUser.id);
   goTo('s-title');
 }
 
 async function authSignOut() {
   if(currentUser) await db.from('players').update({is_online:false}).eq('id',currentUser.id);
+  if(battleInviteChannel){db.removeChannel(battleInviteChannel);battleInviteChannel=null;}
+  if(battleChannel){db.removeChannel(battleChannel);battleChannel=null;}
   await db.auth.signOut();
   currentUser = null;
   currentPlayer = null;
@@ -2920,10 +2927,72 @@ async function checkBattleInvites() {
       .eq('player2_id',currentUser.id).eq('status','waiting');
     if(data&&data.length>0){
       const room=data[0];
-      const accept=confirm(`${getAvatar(room.player1?.avatar_id)} ${room.player1?.display_name||'玩家'} 向你發出對戰挑戰，要接受嗎？`);
-      if(accept) acceptBattle(room.id);
+      const avatar=getAvatar(room.player1?.avatar_id);
+      const name=room.player1?.display_name||'未知玩家';
+      showBattleInvitePopup(room.id,avatar,name);
     }
   } catch(e){console.error('checkBattleInvites:',e);}
+}
+
+function subscribeToBattleInvites() {
+  if(battleInviteChannel) db.removeChannel(battleInviteChannel);
+  battleInviteChannel = db.channel('battle-invites:'+currentUser.id)
+    .on('postgres_changes',{
+      event:'INSERT',
+      schema:'public',
+      table:'battle_rooms',
+      filter:`player2_id=eq.${currentUser.id}`
+    }, async(payload)=>{
+      const room=payload.new;
+      if(room.status!=='waiting') return;
+      const {data:player1} = await db.from('players')
+        .select('display_name,avatar_id').eq('id',room.player1_id).single();
+      const avatar=getAvatar(player1?.avatar_id);
+      const name=player1?.display_name||'未知玩家';
+      showBattleInvitePopup(room.id,avatar,name);
+    })
+    .subscribe();
+}
+
+function showBattleInvitePopup(roomId,avatar,name) {
+  const old=document.getElementById('battle-invite-popup');
+  if(old) old.remove();
+  const popup=document.createElement('div');
+  popup.id='battle-invite-popup';
+  popup.style.cssText=`position:fixed;top:60px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#1a1a3e,#2d1b69);border:2px solid #f8d000;border-radius:16px;padding:20px 24px;z-index:9999;text-align:center;min-width:280px;box-shadow:0 8px 32px rgba(0,0,0,0.5);animation:slideDown 0.3s ease`;
+  popup.innerHTML=`
+    <div style="font-size:36px;margin-bottom:8px">${avatar}</div>
+    <div style="color:#f8d000;font-size:16px;font-weight:bold;margin-bottom:4px">${name}</div>
+    <div style="color:#aaa;font-size:14px;margin-bottom:16px">向你發出對戰挑戰！</div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button onclick="acceptBattleInvite('${roomId}')"
+        style="background:linear-gradient(135deg,#4CAF50,#2e7d32);color:#fff;border:none;border-radius:10px;padding:10px 24px;font-size:15px;font-weight:bold;cursor:pointer">
+        接受 ⚔️
+      </button>
+      <button onclick="declineBattleInvite('${roomId}')"
+        style="background:rgba(220,50,50,0.7);color:#fff;border:none;border-radius:10px;padding:10px 24px;font-size:15px;cursor:pointer">
+        拒絕
+      </button>
+    </div>`;
+  document.body.appendChild(popup);
+  setTimeout(()=>{
+    if(document.getElementById('battle-invite-popup')){
+      popup.remove();
+      declineBattleInvite(roomId);
+    }
+  },30000);
+}
+
+async function acceptBattleInvite(roomId) {
+  const popup=document.getElementById('battle-invite-popup');
+  if(popup) popup.remove();
+  await acceptBattle(roomId);
+}
+
+async function declineBattleInvite(roomId) {
+  const popup=document.getElementById('battle-invite-popup');
+  if(popup) popup.remove();
+  await db.from('battle_rooms').update({status:'declined'}).eq('id',roomId);
 }
 
 // ═══════════════════════════════════════════════
