@@ -595,6 +595,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
         </div>
         <div id="auth-error" class="auth-error"></div>
         <button id="auth-submit" class="btn-auth" onclick="authSignIn()">登入</button>
+        <div style="text-align:center;margin-top:8px;">
+          <button onclick="showForgotPassword()"
+            style="background:none;border:none;color:#aaa;font-size:13px;cursor:pointer;text-decoration:underline;">
+            忘記密碼？
+          </button>
+        </div>
       </div>
     </div>
     <div class="auth-tagline">用數學之力召喚守護神！</div>
@@ -622,7 +628,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
       <div class="logo-sub">數學奇航</div>
     </div>
     <div id="titleHeroWrap"></div>
-    <button class="btn-start" onclick="goTo('s-planet')">開始冒險</button>
+    <button class="btn-start" onclick="unlockAudio();goTo('s-planet')">開始冒險</button>
     <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
       <button class="btn-sec" onclick="goTo('s-leaderboard')">星際排行榜</button>
       <button class="btn-sec" onclick="goTo('s-friends')">好友</button>
@@ -927,10 +933,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 
     <!-- Tab 1：安全性 -->
     <div id="acc-panel-1" style="display:none">
-      <div class="acc-card">
-        <div class="acc-label" style="margin-bottom:8px">忘記密碼？</div>
-        <button onclick="sendPasswordReset()" class="acc-btn acc-btn-secondary">寄送密碼重設信到信箱</button>
-      </div>
       <div class="acc-card">
         <div class="acc-label" style="margin-bottom:8px">修改密碼</div>
         <input id="acc-new-password" type="password" placeholder="新密碼（至少6字元）" class="acc-input">
@@ -1273,6 +1275,20 @@ async function authSignOut() {
 function showAuthError(msg) {
   const el = document.getElementById('auth-error');
   if (el) el.textContent = msg;
+}
+
+async function showForgotPassword() {
+  const email = document.getElementById('auth-email').value.trim();
+  if (!email) { showAuthError('請先輸入你的電子信箱'); return; }
+  const { error } = await db.auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://math-hero-game.vercel.app'
+  });
+  const el = document.getElementById('auth-error');
+  if (error) {
+    if (el) { el.style.color = '#f44336'; el.textContent = '寄送失敗：' + error.message; }
+  } else {
+    if (el) { el.style.color = '#4CAF50'; el.textContent = '✅ 重設信已寄出，請查收信箱！'; }
+  }
 }
 
 function translateError(msg) {
@@ -1705,6 +1721,9 @@ function ac(){
   return _ac;
 }
 function unlockAudio(){
+  if(_ac && _ac.state==='suspended'){
+    _ac.resume().then(()=>console.log('音效已解鎖'));
+  }
   try{ac();}catch(e){}
 }
 function tone(f,d,t='sine',v=0.3,a=0.01){
@@ -1720,6 +1739,7 @@ function tone(f,d,t='sine',v=0.3,a=0.01){
 }
 function sfx(n){
   if(localStorage.getItem('sound_on')==='false') return;
+  if(_ac && _ac.state==='suspended') _ac.resume();
   if(n==='correct'){tone(880,.1,'sine',.4);setTimeout(()=>tone(1320,.15,'sine',.3),80);}
   else if(n==='wrong'){tone(180,.4,'sawtooth',.25);}
   else if(n==='fail'){[440,370,310,250].forEach((f,i)=>setTimeout(()=>tone(f,.25,'sine',.3),i*130));}
@@ -2423,15 +2443,18 @@ function checkLoginStreak() {
 // ═══════════════════════════════════════════════
 async function loadLeaderboard() {
   const list = document.getElementById('leaderboard-list');
-  if (!list) return;
-  list.innerHTML = '<p style="color:#aaa;text-align:center;padding:20px">載入中...</p>';
+  if (list) list.innerHTML = '<p style="color:#aaa;text-align:center;padding:20px">載入中...</p>';
   const { data, error } = await db.from('public_leaderboard').select('*');
   if (error) {
-    console.error('leaderboard:', error);
-    list.innerHTML = '<p style="color:#f66;text-align:center;padding:20px">載入失敗</p>';
+    console.error('排行榜錯誤:', error);
+    if (list) list.innerHTML = `<p style="color:#f44336;text-align:center;padding:20px">載入失敗：${error.message}</p>`;
     return;
   }
-  renderLeaderboard(data || []);
+  if (!data || !data.length) {
+    if (list) list.innerHTML = '<p style="color:#aaa;text-align:center;padding:20px">還沒有排行榜資料，先去打幾關吧！</p>';
+    return;
+  }
+  renderLeaderboard(data);
 }
 
 function renderLeaderboard(data) {
@@ -2946,7 +2969,7 @@ function showBattleQuestion() {
     }
     if (battleTimeLeft <= 0) {
       clearInterval(battleQuestionTimer);
-      handleBattleAnswer(false, 0);
+      handleBattleAnswer(false, 0, undefined, battleQuestions[battleCurrentQ]?.answer);
     }
   }, 1000);
 }
@@ -2967,53 +2990,103 @@ async function handleBattleAnswer(isCorrect, earnedScore, userAnswer, correctAns
   const btn = document.getElementById('battle-submit-btn');
   if (inp) inp.disabled = true;
   if (btn) btn.disabled = true;
+  if (battleQuestionTimer) clearInterval(battleQuestionTimer);
 
   if (earnedScore > 0) battleMyScore += earnedScore;
 
   const feedback = document.getElementById('battle-feedback');
   const question = battleQuestions[battleCurrentQ];
+
   if (feedback) {
     if (earnedScore > 0) {
       feedback.style.color = '#4CAF50';
       feedback.textContent = `✅ 答對！+${earnedScore} 分`;
-    } else if (userAnswer !== undefined && userAnswer === question?.answer) {
-      feedback.style.color = '#ff9800';
-      feedback.textContent = `⏰ 太慢了！答案是 ${question?.answer}`;
     } else {
       feedback.style.color = '#f44336';
-      feedback.textContent = `❌ 答錯！答案是 ${correctAnswer ?? question?.answer}`;
+      feedback.textContent = `❌ 答案是 ${correctAnswer ?? question?.answer}`;
     }
   }
 
   document.getElementById('battle-my-score').textContent = battleMyScore;
+
+  try {
+    await db.from('battle_answers').insert({
+      room_id: battleRoom.id,
+      player_id: currentUser.id,
+      question_index: battleCurrentQ,
+      answer: String(userAnswer ?? ''),
+      is_correct: earnedScore > 0,
+      time_spent: (10 - battleTimeLeft) * 1000
+    });
+  } catch(e) { console.error('記錄答案失敗', e); }
+
+  const scoreField = currentUser.id === battleRoom.player1_id
+    ? 'player1_score' : 'player2_score';
+  await db.from('battle_rooms')
+    .update({ [scoreField]: battleMyScore })
+    .eq('id', battleRoom.id);
+
   const inputArea = document.getElementById('battle-input-area');
   if (inputArea) inputArea.style.display = 'none';
 
-  await db.from('battle_answers').insert({
-    room_id: battleRoom.id,
-    player_id: currentUser.id,
-    question_index: battleCurrentQ,
-    answer: String(userAnswer ?? ''),
-    is_correct: earnedScore > 0,
-    time_spent: (10 - battleTimeLeft) * 1000
-  });
+  if (feedback) feedback.textContent += '　⏳ 等待對手...';
 
-  const scoreField = currentUser.id === battleRoom.player1_id ? 'player1_score' : 'player2_score';
-  await db.from('battle_rooms').update({ [scoreField]: battleMyScore }).eq('id', battleRoom.id);
+  waitForOpponent(battleCurrentQ);
+}
 
+async function waitForOpponent(questionIndex) {
+  const maxWait = 15000;
+  const startWait = Date.now();
+  const opponentId = currentUser.id === battleRoom.player1_id
+    ? battleRoom.player2_id : battleRoom.player1_id;
+
+  const check = async () => {
+    const { data } = await db
+      .from('battle_answers')
+      .select('id')
+      .eq('room_id', battleRoom.id)
+      .eq('question_index', questionIndex)
+      .eq('player_id', opponentId)
+      .limit(1);
+
+    const opponentDone = data && data.length > 0;
+    const timedOut = Date.now() - startWait > maxWait;
+
+    if (opponentDone || timedOut) {
+      startNextQuestionCountdown();
+    } else {
+      setTimeout(check, 500);
+    }
+  };
+
+  check();
+}
+
+function startNextQuestionCountdown() {
+  const feedback = document.getElementById('battle-feedback');
   let countdown = 3;
-  if (feedback) feedback.textContent += `　（${countdown} 秒後下一題）`;
+
+  if (feedback) {
+    feedback.textContent = feedback.textContent
+      .replace('⏳ 等待對手...', '').trim();
+    feedback.textContent += `　（${countdown} 秒後下一題）`;
+  }
 
   if (battleCountdownTimer) clearInterval(battleCountdownTimer);
   battleCountdownTimer = setInterval(() => {
     countdown--;
     if (feedback && countdown > 0) {
-      feedback.textContent = feedback.textContent.replace(/（\d+\s*秒後下一題）/, `（${countdown} 秒後下一題）`);
+      feedback.textContent = feedback.textContent
+        .replace(/（\d+ 秒後下一題）/, `（${countdown} 秒後下一題）`);
     }
     if (countdown <= 0) {
       clearInterval(battleCountdownTimer);
       battleCurrentQ++;
-      showBattleQuestion();
+      if (battleCurrentQ >= battleQuestions.length) {
+        finishBattle();
+      } else {
+        showBattleQuestion();
+      }
     }
   }, 1000);
 }
@@ -3132,6 +3205,8 @@ window.addEventListener('DOMContentLoaded',()=>{
   renderWorld();
   refreshStarsDisplay();
   initAuth();
+  document.addEventListener('touchstart',unlockAudio,{once:true});
+  document.addEventListener('click',unlockAudio,{once:true});
 });
 </script>
 </body>
