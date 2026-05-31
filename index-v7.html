@@ -1075,6 +1075,8 @@ let battleCountdownTimer = null;
 let battleQuestionTimer = null;
 let battleTimeLeft = 10;
 let battleStarted = false;
+let battleServerTimer = null;
+let battleAnsweredThisQuestion = false;
 
 // ═══════════════════════════════════════════════
 // 帳號系統
@@ -2444,38 +2446,84 @@ function checkLoginStreak() {
 async function loadLeaderboard() {
   const list = document.getElementById('leaderboard-list');
   if (list) list.innerHTML = '<p style="color:#aaa;text-align:center;padding:20px">載入中...</p>';
-  const { data, error } = await db.from('public_leaderboard').select('*');
+
+  const { data: friendships } = await db
+    .from('friendships')
+    .select('requester_id, receiver_id')
+    .or(`requester_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`)
+    .eq('status', 'accepted');
+
+  const friendIds = (friendships || []).map(f =>
+    f.requester_id === currentUser.id ? f.receiver_id : f.requester_id
+  );
+
+  const targetIds = [currentUser.id, ...friendIds];
+
+  const { data, error } = await db
+    .from('public_leaderboard')
+    .select('*')
+    .in('id', targetIds);
+
   if (error) {
     console.error('排行榜錯誤:', error);
     if (list) list.innerHTML = `<p style="color:#f44336;text-align:center;padding:20px">載入失敗：${error.message}</p>`;
     return;
   }
-  if (!data || !data.length) {
-    if (list) list.innerHTML = '<p style="color:#aaa;text-align:center;padding:20px">還沒有排行榜資料，先去打幾關吧！</p>';
+
+  const existingIds = (data || []).map(d => d.id);
+  const missingIds = targetIds.filter(id => !existingIds.includes(id));
+
+  let allData = [...(data || [])];
+
+  if (missingIds.length > 0) {
+    const { data: missingPlayers } = await db
+      .from('players')
+      .select('id, display_name, avatar_id')
+      .in('id', missingIds);
+    const missingWithZero = (missingPlayers || []).map(p => ({
+      ...p,
+      total_fragments: 0
+    }));
+    allData = [...allData, ...missingWithZero];
+  }
+
+  allData.sort((a, b) => (b.total_fragments || 0) - (a.total_fragments || 0));
+
+  if (!allData.length) {
+    if (list) list.innerHTML = '<p style="color:#aaa;text-align:center;padding:20px">還沒有資料，先去打幾關吧！</p>';
     return;
   }
-  renderLeaderboard(data);
+
+  renderLeaderboard(allData);
 }
 
 function renderLeaderboard(data) {
   const list = document.getElementById('leaderboard-list');
   if (!list) return;
-  if (!data.length) { list.innerHTML = '<p style="color:#aaa;text-align:center;padding:20px">還沒有排行資料</p>'; return; }
-  list.innerHTML = '';
-  data.forEach((row, i) => {
+
+  list.innerHTML = data.map((row, i) => {
     const rank = i + 1;
-    const medal = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':`${rank}.`;
-    const isMe = row.id === currentUser?.id;
-    const div = document.createElement('div');
-    div.className = 'lb-row' + (isMe ? ' lb-me' : '');
-    div.innerHTML = `<span class="lb-rank">${medal}</span><span class="lb-name">${row.display_name||'玩家'}</span><span class="lb-stars">⭐ ${row.total_fragments||0}</span>`;
-    list.appendChild(div);
-  });
+    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`;
+    const isMe = row.id === currentUser.id;
+    const avatar = getAvatar(row.avatar_id);
+    return `<div class="lb-row${isMe ? ' lb-me' : ''}">
+      <span class="lb-rank">${medal}</span>
+      <span style="font-size:20px">${avatar}</span>
+      <span class="lb-name">${row.display_name}${isMe ? ' （我）' : ''}</span>
+      <span class="lb-stars">⭐ ${row.total_fragments || 0}</span>
+    </div>`;
+  }).join('');
 }
 
 // ═══════════════════════════════════════════════
 // FRIENDS
 // ═══════════════════════════════════════════════
+function isPlayerOnline(lastSeen) {
+  if (!lastSeen) return false;
+  const diff = Date.now() - new Date(lastSeen).getTime();
+  return diff < 5 * 60 * 1000;
+}
+
 function switchFrTab(idx) {
   for(let i=0;i<4;i++){
     document.getElementById('fr-tab-'+i).className='acc-tab'+(i===idx?' active':'');
@@ -2486,11 +2534,11 @@ function switchFrTab(idx) {
 
 async function loadFriendsScreen() {
   if(!currentUser) return;
-  db.from('players').update({is_online:true,last_seen:new Date().toISOString()}).eq('id',currentUser.id);
+  await db.from('players').update({last_seen:new Date().toISOString()}).eq('id',currentUser.id);
 
   const {data:accepted} = await db
     .from('friendships')
-    .select('id, requester:players!requester_id(id,display_name,avatar_id,is_online), receiver:players!receiver_id(id,display_name,avatar_id,is_online)')
+    .select('id, requester:players!requester_id(id,display_name,avatar_id,last_seen), receiver:players!receiver_id(id,display_name,avatar_id,last_seen)')
     .or(`requester_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`)
     .eq('status','accepted');
 
@@ -2532,7 +2580,8 @@ function renderFriendsList(data) {
   el.innerHTML = data.map(f=>{
     const friend = f.requester.id===currentUser.id?f.receiver:f.requester;
     const fid = f.id;
-    const dot = friend.is_online
+    const online = isPlayerOnline(friend.last_seen);
+    const dot = online
       ?'<span style="color:#4CAF50;font-size:11px">● 在線</span>'
       :'<span style="color:#555;font-size:11px">● 離線</span>';
     return `<div class="friend-row">
@@ -2893,8 +2942,18 @@ async function challengeFriend(friendId, friendName) {
 }
 
 async function acceptBattle(roomId) {
-  const { data, error } = await db.from('battle_rooms')
-    .update({ status: 'ready' }).eq('id', roomId).select().single();
+  const { data, error } = await db
+    .from('battle_rooms')
+    .update({
+      status: 'ready',
+      current_question: 0,
+      question_start_at: new Date().toISOString(),
+      p1_answered: false,
+      p2_answered: false
+    })
+    .eq('id', roomId)
+    .select()
+    .single();
   if (error) { showToast('接受失敗'); return; }
   battleRoom = data;
   subscribeToBattleRoom(roomId);
@@ -2904,216 +2963,339 @@ async function acceptBattle(roomId) {
 function subscribeToBattleRoom(roomId) {
   if (battleChannel) db.removeChannel(battleChannel);
   battleChannel = db.channel('battle:' + roomId)
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'battle_rooms', filter: `id=eq.${roomId}` },
-      (payload) => handleBattleRoomUpdate(payload.new))
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'battle_rooms',
+      filter: `id=eq.${roomId}`
+    }, (payload) => handleBattleRoomUpdate(payload.new))
     .subscribe();
 }
 
 function handleBattleRoomUpdate(room) {
+  const prevQuestion = battleRoom ? (battleRoom.current_question || 0) : 0;
   battleRoom = room;
-  if (room.status === 'ready' && !battleStarted) startBattle();
-  if (room.player1_finished && room.player2_finished) showBattleResult();
+
+  if (room.status === 'ready' && !battleStarted) { startBattle(); return; }
+
+  if (room.status === 'finished' && room.winner_id) {
+    if (battleServerTimer) clearInterval(battleServerTimer);
+    const iWin = room.winner_id === currentUser.id;
+    const feedback = document.getElementById('battle-feedback');
+    if (feedback) {
+      feedback.style.color = iWin ? '#4CAF50' : '#f44336';
+      feedback.textContent = iWin ? '🏆 對手離線！你獲勝了！' : '😢 你被判定為離線，對手獲勝';
+    }
+    setTimeout(() => showBattleResult(), 2000);
+    return;
+  }
+
   const opScore = currentUser.id === room.player1_id ? room.player2_score : room.player1_score;
   const el = document.getElementById('battle-opponent-score');
   if (el) el.textContent = opScore || 0;
+
+  const newQuestion = room.current_question || 0;
+  if (newQuestion > prevQuestion) {
+    if (battleServerTimer) clearInterval(battleServerTimer);
+    const feedback = document.getElementById('battle-feedback');
+    let countdown = 3;
+    if (feedback) {
+      feedback.textContent = feedback.textContent.replace('⏳ 等待對手...', '').trim();
+      feedback.textContent += `　（${countdown} 秒後下一題）`;
+    }
+    const countdownTimer = setInterval(() => {
+      countdown--;
+      if (feedback && countdown > 0) {
+        feedback.textContent = feedback.textContent
+          .replace(/（\d+ 秒後下一題）/, `（${countdown} 秒後下一題）`);
+      }
+      if (countdown <= 0) {
+        clearInterval(countdownTimer);
+        if (newQuestion >= battleQuestions.length) {
+          finishBattle();
+        } else {
+          syncBattleQuestion();
+        }
+      }
+    }, 1000);
+  }
+
+  if (room.player1_finished && room.player2_finished) {
+    showBattleResult();
+  }
 }
 
 function startBattle() {
   battleQuestions = generateBattleQuestions(battleRoom.seed, battleRoom.level_id, 10);
-  battleCurrentQ = 0;
   battleMyScore = 0;
+  battleAnsweredThisQuestion = false;
   battleStarted = true;
+
   const opponentId = currentUser.id === battleRoom.player1_id
     ? battleRoom.player2_id : battleRoom.player1_id;
   db.from('players').select('display_name').eq('id', opponentId).single()
-    .then(({data}) => {
+    .then(({ data }) => {
       const el = document.getElementById('battle-opponent-name');
       if (el && data) el.textContent = data.display_name;
     });
+
   goTo('s-battle');
-  showBattleQuestion();
+  syncBattleQuestion();
 }
 
-function showBattleQuestion() {
-  if (battleCurrentQ >= battleQuestions.length) { finishBattle(); return; }
+function syncBattleQuestion() {
+  if (!battleRoom) return;
 
-  const q = battleQuestions[battleCurrentQ];
+  const qIdx = battleRoom.current_question || 0;
+
+  if (qIdx >= battleQuestions.length) {
+    finishBattle();
+    return;
+  }
+
+  battleAnsweredThisQuestion = false;
+
+  const q = battleQuestions[qIdx];
   document.getElementById('battle-question').textContent = q.question;
-  document.getElementById('battle-progress').textContent =
-    `第 ${battleCurrentQ + 1} / ${battleQuestions.length} 題`;
+  document.getElementById('battle-progress').textContent = `第 ${qIdx + 1} / ${battleQuestions.length} 題`;
   document.getElementById('battle-feedback').textContent = '';
   document.getElementById('battle-my-score').textContent = battleMyScore;
-  document.getElementById('battle-timer').textContent = '10';
-  document.getElementById('battle-timer-circle').style.borderColor = '#f8d000';
+
+  const startAt = battleRoom.question_start_at
+    ? new Date(battleRoom.question_start_at).getTime()
+    : Date.now();
+  const elapsed = Math.floor((Date.now() - startAt) / 1000);
+  battleTimeLeft = Math.max(0, 10 - elapsed);
+
+  if (battleTimeLeft <= 0) {
+    handleTimeout();
+    return;
+  }
 
   const inputArea = document.getElementById('battle-input-area');
   if (inputArea) inputArea.style.display = 'block';
   const inp = document.getElementById('battle-answer-input');
-  inp.value = '';
-  inp.disabled = false;
   const btn = document.getElementById('battle-submit-btn');
+  if (inp) { inp.value = ''; inp.disabled = false; inp.focus(); }
   if (btn) btn.disabled = false;
-  setTimeout(() => { try { inp.focus(); inp.click(); } catch(e){} }, 150);
 
-  if (battleQuestionTimer) clearInterval(battleQuestionTimer);
-  battleTimeLeft = 10;
-  battleQuestionTimer = setInterval(() => {
-    battleTimeLeft--;
-    const timerEl = document.getElementById('battle-timer');
-    if (timerEl) timerEl.textContent = battleTimeLeft;
-    const circle = document.getElementById('battle-timer-circle');
-    if (circle) {
-      if (battleTimeLeft <= 3) circle.style.borderColor = '#f44336';
-      else if (battleTimeLeft <= 5) circle.style.borderColor = '#ff9800';
-      else circle.style.borderColor = '#f8d000';
-    }
+  updateTimerDisplay(battleTimeLeft);
+
+  if (battleServerTimer) clearInterval(battleServerTimer);
+
+  battleServerTimer = setInterval(() => {
+    const now = Date.now();
+    const elapsed2 = Math.floor((now - startAt) / 1000);
+    battleTimeLeft = Math.max(0, 10 - elapsed2);
+    updateTimerDisplay(battleTimeLeft);
+
     if (battleTimeLeft <= 0) {
-      clearInterval(battleQuestionTimer);
-      handleBattleAnswer(false, 0, undefined, battleQuestions[battleCurrentQ]?.answer);
+      clearInterval(battleServerTimer);
+      if (!battleAnsweredThisQuestion) {
+        handleTimeout();
+      }
     }
-  }, 1000);
+  }, 200);
 }
 
-async function submitBattleAnswer() {
-  const inp = document.getElementById('battle-answer-input');
-  const userAnswer = parseInt(inp.value);
-  if (isNaN(userAnswer) || inp.disabled) return;
-  clearInterval(battleQuestionTimer);
-  const q = battleQuestions[battleCurrentQ];
-  const isCorrect = userAnswer === q.answer;
-  const earnedScore = isCorrect ? battleTimeLeft : 0;
-  handleBattleAnswer(isCorrect, earnedScore, userAnswer, q.answer);
+function updateTimerDisplay(t) {
+  const timerEl = document.getElementById('battle-timer');
+  const circle = document.getElementById('battle-timer-circle');
+  if (timerEl) timerEl.textContent = t;
+  if (circle) {
+    if (t <= 3) circle.style.borderColor = '#f44336';
+    else if (t <= 5) circle.style.borderColor = '#ff9800';
+    else circle.style.borderColor = '#f8d000';
+  }
 }
 
-async function handleBattleAnswer(isCorrect, earnedScore, userAnswer, correctAnswer) {
+async function handleTimeout() {
+  if (battleAnsweredThisQuestion) return;
+  battleAnsweredThisQuestion = true;
+
+  if (battleServerTimer) clearInterval(battleServerTimer);
+
   const inp = document.getElementById('battle-answer-input');
   const btn = document.getElementById('battle-submit-btn');
   if (inp) inp.disabled = true;
   if (btn) btn.disabled = true;
-  if (battleQuestionTimer) clearInterval(battleQuestionTimer);
+
+  const qIdx = battleRoom.current_question || 0;
+  const q = battleQuestions[qIdx];
+  const feedback = document.getElementById('battle-feedback');
+  if (feedback) {
+    feedback.style.color = '#ff9800';
+    feedback.textContent = `⏰ 時間到！答案是 ${q.answer}`;
+  }
+
+  const inputArea = document.getElementById('battle-input-area');
+  if (inputArea) inputArea.style.display = 'none';
+
+  await db.from('battle_answers').insert({
+    room_id: battleRoom.id,
+    player_id: currentUser.id,
+    question_index: qIdx,
+    answer: '',
+    is_correct: false,
+    time_spent: 10000
+  }).catch(e => console.error('記錄超時失敗', e));
+
+  const isP1 = currentUser.id === battleRoom.player1_id;
+  const answeredField = isP1 ? 'p1_answered' : 'p2_answered';
+  const skipField = isP1 ? 'p1_skipped_count' : 'p2_skipped_count';
+  const skipCount = isP1
+    ? (battleRoom.p1_skipped_count || 0) + 1
+    : (battleRoom.p2_skipped_count || 0) + 1;
+
+  if (skipCount >= 3) {
+    const winnerId = isP1 ? battleRoom.player2_id : battleRoom.player1_id;
+    await db.from('battle_rooms').update({
+      status: 'finished',
+      winner_id: winnerId,
+      [answeredField]: true,
+      [skipField]: skipCount
+    }).eq('id', battleRoom.id);
+    return;
+  }
+
+  await db.from('battle_rooms').update({
+    [answeredField]: true,
+    [skipField]: skipCount
+  }).eq('id', battleRoom.id);
+
+  tryAdvanceQuestion();
+}
+
+async function submitBattleAnswer() {
+  if (battleAnsweredThisQuestion) return;
+
+  const inp = document.getElementById('battle-answer-input');
+  const userAnswer = parseInt(inp.value);
+  if (isNaN(userAnswer)) return;
+
+  battleAnsweredThisQuestion = true;
+  if (battleServerTimer) clearInterval(battleServerTimer);
+
+  if (inp) inp.disabled = true;
+  const btn = document.getElementById('battle-submit-btn');
+  if (btn) btn.disabled = true;
+
+  const qIdx = battleRoom.current_question || 0;
+  const q = battleQuestions[qIdx];
+  const isCorrect = userAnswer === q.answer;
+  const earnedScore = isCorrect ? battleTimeLeft : 0;
 
   if (earnedScore > 0) battleMyScore += earnedScore;
 
   const feedback = document.getElementById('battle-feedback');
-  const question = battleQuestions[battleCurrentQ];
-
   if (feedback) {
     if (earnedScore > 0) {
       feedback.style.color = '#4CAF50';
       feedback.textContent = `✅ 答對！+${earnedScore} 分`;
     } else {
       feedback.style.color = '#f44336';
-      feedback.textContent = `❌ 答案是 ${correctAnswer ?? question?.answer}`;
+      feedback.textContent = `❌ 答案是 ${q.answer}`;
     }
   }
 
   document.getElementById('battle-my-score').textContent = battleMyScore;
 
-  try {
-    await db.from('battle_answers').insert({
-      room_id: battleRoom.id,
-      player_id: currentUser.id,
-      question_index: battleCurrentQ,
-      answer: String(userAnswer ?? ''),
-      is_correct: earnedScore > 0,
-      time_spent: (10 - battleTimeLeft) * 1000
-    });
-  } catch(e) { console.error('記錄答案失敗', e); }
-
-  const scoreField = currentUser.id === battleRoom.player1_id
-    ? 'player1_score' : 'player2_score';
-  await db.from('battle_rooms')
-    .update({ [scoreField]: battleMyScore })
-    .eq('id', battleRoom.id);
-
   const inputArea = document.getElementById('battle-input-area');
   if (inputArea) inputArea.style.display = 'none';
 
+  await db.from('battle_answers').insert({
+    room_id: battleRoom.id,
+    player_id: currentUser.id,
+    question_index: qIdx,
+    answer: String(userAnswer),
+    is_correct: isCorrect,
+    time_spent: (10 - battleTimeLeft) * 1000
+  }).catch(e => console.error('記錄答案失敗', e));
+
+  const isP1 = currentUser.id === battleRoom.player1_id;
+  const scoreField = isP1 ? 'player1_score' : 'player2_score';
+  const answeredField = isP1 ? 'p1_answered' : 'p2_answered';
+  const skipField = isP1 ? 'p1_skipped_count' : 'p2_skipped_count';
+
+  await db.from('battle_rooms').update({
+    [scoreField]: battleMyScore,
+    [answeredField]: true,
+    [skipField]: 0
+  }).eq('id', battleRoom.id);
+
   if (feedback) feedback.textContent += '　⏳ 等待對手...';
 
-  waitForOpponent(battleCurrentQ);
+  tryAdvanceQuestion();
 }
 
-async function waitForOpponent(questionIndex) {
-  const maxWait = 15000;
-  const startWait = Date.now();
-  const opponentId = currentUser.id === battleRoom.player1_id
-    ? battleRoom.player2_id : battleRoom.player1_id;
+async function tryAdvanceQuestion() {
+  const { data: room } = await db
+    .from('battle_rooms')
+    .select('*')
+    .eq('id', battleRoom.id)
+    .single();
 
-  const check = async () => {
-    const { data } = await db
-      .from('battle_answers')
-      .select('id')
-      .eq('room_id', battleRoom.id)
-      .eq('question_index', questionIndex)
-      .eq('player_id', opponentId)
-      .limit(1);
+  if (!room) return;
 
-    const opponentDone = data && data.length > 0;
-    const timedOut = Date.now() - startWait > maxWait;
+  const bothAnswered = room.p1_answered && room.p2_answered;
+  const startAt = room.question_start_at
+    ? new Date(room.question_start_at).getTime()
+    : 0;
+  const elapsed = Date.now() - startAt;
+  const timeUp = elapsed >= 10000;
 
-    if (opponentDone || timedOut) {
-      startNextQuestionCountdown();
-    } else {
-      setTimeout(check, 500);
-    }
-  };
+  if (!bothAnswered && !timeUp) return;
 
-  check();
-}
+  const nextQ = (room.current_question || 0) + 1;
+  const nowStr = new Date().toISOString();
 
-function startNextQuestionCountdown() {
-  const feedback = document.getElementById('battle-feedback');
-  let countdown = 3;
+  const { error } = await db.from('battle_rooms').update({
+    current_question: nextQ,
+    question_start_at: nowStr,
+    p1_answered: false,
+    p2_answered: false
+  })
+  .eq('id', room.id)
+  .eq('current_question', room.current_question);
 
-  if (feedback) {
-    feedback.textContent = feedback.textContent
-      .replace('⏳ 等待對手...', '').trim();
-    feedback.textContent += `　（${countdown} 秒後下一題）`;
+  if (error) {
+    console.log('另一方已推進題目');
   }
-
-  if (battleCountdownTimer) clearInterval(battleCountdownTimer);
-  battleCountdownTimer = setInterval(() => {
-    countdown--;
-    if (feedback && countdown > 0) {
-      feedback.textContent = feedback.textContent
-        .replace(/（\d+ 秒後下一題）/, `（${countdown} 秒後下一題）`);
-    }
-    if (countdown <= 0) {
-      clearInterval(battleCountdownTimer);
-      battleCurrentQ++;
-      if (battleCurrentQ >= battleQuestions.length) {
-        finishBattle();
-      } else {
-        showBattleQuestion();
-      }
-    }
-  }, 1000);
 }
 
 async function finishBattle() {
-  if (battleQuestionTimer) clearInterval(battleQuestionTimer);
-  if (battleCountdownTimer) clearInterval(battleCountdownTimer);
-  const finishField = currentUser.id === battleRoom.player1_id ? 'player1_finished' : 'player2_finished';
-  await db.from('battle_rooms').update({ [finishField]: true }).eq('id', battleRoom.id);
+  if (battleServerTimer) clearInterval(battleServerTimer);
+
+  const finishField = currentUser.id === battleRoom.player1_id
+    ? 'player1_finished' : 'player2_finished';
+  await db.from('battle_rooms')
+    .update({ [finishField]: true })
+    .eq('id', battleRoom.id);
+
   const msgEl = document.getElementById('battle-waiting-msg');
   if (msgEl) msgEl.textContent = '等待對手完成...';
   goTo('s-battle-waiting');
 }
 
 async function showBattleResult() {
-  if (battleQuestionTimer) clearInterval(battleQuestionTimer);
-  if (battleCountdownTimer) clearInterval(battleCountdownTimer);
+  if (battleServerTimer) clearInterval(battleServerTimer);
+
   const myScore = currentUser.id === battleRoom.player1_id
     ? battleRoom.player1_score : battleRoom.player2_score;
   const opScore = currentUser.id === battleRoom.player1_id
     ? battleRoom.player2_score : battleRoom.player1_score;
+
   const win = myScore > opScore;
   const draw = myScore === opScore;
-  document.getElementById('battle-result-title').textContent = draw ? '平局！' : win ? '🏆 勝利！' : '😢 落敗';
-  document.getElementById('battle-result-score').textContent = `${myScore} : ${opScore}`;
+
+  document.getElementById('battle-result-title').textContent =
+    draw ? '平局！' : win ? '🏆 勝利！' : '😢 落敗';
+  document.getElementById('battle-result-score').textContent =
+    `${myScore} : ${opScore}`;
+
   if (win) addStarFragments(10);
   else if (draw) addStarFragments(3);
+
   if (battleChannel) { db.removeChannel(battleChannel); battleChannel = null; }
   battleStarted = false;
   goTo('s-battle-result');
@@ -3207,6 +3389,14 @@ window.addEventListener('DOMContentLoaded',()=>{
   initAuth();
   document.addEventListener('touchstart',unlockAudio,{once:true});
   document.addEventListener('click',unlockAudio,{once:true});
+
+  setInterval(async () => {
+    if (currentUser) {
+      await db.from('players')
+        .update({ last_seen: new Date().toISOString() })
+        .eq('id', currentUser.id);
+    }
+  }, 2 * 60 * 1000);
 });
 </script>
 </body>
