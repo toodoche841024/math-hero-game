@@ -543,6 +543,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 .avatar-option:hover{border-color:rgba(255,215,0,0.5)}
 .avatar-option.avatar-selected{border-color:#f8d000;background:rgba(255,215,0,0.1)}
 .acc-input{width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:8px;color:#fff;padding:10px 12px;font-size:14px;margin-bottom:10px;box-sizing:border-box}
+select option{background:#1a1a3e;color:#fff}
 .acc-btn{width:100%;background:linear-gradient(135deg,#f5a623,#f8d000);color:#1a1a2e;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:bold;cursor:pointer;margin-bottom:8px}
 .acc-btn-danger{background:rgba(220,50,50,0.8)!important;color:#fff!important}
 .acc-btn-secondary{background:rgba(255,255,255,0.1)!important;color:#fff!important}
@@ -908,7 +909,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
     <div id="admin-panel-1" style="display:none;">
       <div class="acc-card">
         <p style="color:#f8d000;font-size:14px;font-weight:bold;margin:0 0 12px;">上傳禮券代碼</p>
-        <select id="admin-code-item" class="acc-input" style="background:rgba(255,255,255,0.08);color:#fff;cursor:pointer;">
+        <select id="admin-code-item" class="acc-input" style="background:#1a1a3e;color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:10px;box-sizing:border-box;cursor:pointer;appearance:auto;width:100%;">
           <option value="">請選擇商品</option>
         </select>
         <textarea id="admin-codes-input" placeholder="每行一個代碼，例如：&#10;GIFT-001-ABCD&#10;GIFT-002-EFGH"
@@ -3557,9 +3558,9 @@ async function declineBattleInvite(roomId) {
 // ═══════════════════════════════════════════════
 
 let currentRedeemItemId = null;
+let currentRedeemStarsRequired = 0;
 
 async function loadShop() {
-  goTo('s-shop');
   const badges = getPlayerBadgeCount();
   const stars = parseInt(localStorage.getItem('mc_stars') || '0');
 
@@ -3578,12 +3579,14 @@ async function loadShop() {
   if (error) {
     document.getElementById('shop-items-list').innerHTML =
       '<p style="color:#f44336;text-align:center;padding:20px;">載入失敗，請稍後再試</p>';
+    goTo('s-shop');
     return;
   }
 
   if (!items || !items.length) {
     document.getElementById('shop-items-list').innerHTML =
       '<p style="color:#aaa;text-align:center;padding:40px;">商店目前沒有商品，敬請期待！</p>';
+    goTo('s-shop');
     return;
   }
 
@@ -3597,49 +3600,61 @@ async function loadShop() {
   const redeemedItemIds = (myRedemptions || []).map(r => r.item_id);
 
   document.getElementById('shop-items-list').innerHTML = items.map(item => {
-    const canRedeem = badges >= item.badge_required;
+    const starsRequired = item.badge_required * 10;
+    const hasBadges = badges >= item.badge_required;
+    const hasStars = stars >= starsRequired;
+    const canRedeem = hasBadges && hasStars;
     const alreadyRedeemed = redeemedItemIds.includes(item.id);
     const outOfStock = item.stock <= 0;
 
+    let statusMsg = '';
+    if (!hasBadges) statusMsg = `需要 ${item.badge_required} 枚徽章`;
+    else if (!hasStars) statusMsg = `還差 ${starsRequired - stars} 顆星星碎片`;
+
     let btnHtml = '';
     if (alreadyRedeemed) {
-      btnHtml = `<button disabled style="background:rgba(255,255,255,0.1);color:#aaa;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:not-allowed;">本季已兌換</button>`;
+      btnHtml = `<button disabled style="background:rgba(255,255,255,0.1);color:#aaa;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:not-allowed;white-space:nowrap;">本季已兌換</button>`;
     } else if (outOfStock) {
-      btnHtml = `<button disabled style="background:rgba(255,255,255,0.1);color:#aaa;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:not-allowed;">已售完</button>`;
+      btnHtml = `<button disabled style="background:rgba(255,255,255,0.1);color:#aaa;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:not-allowed;white-space:nowrap;">已售完</button>`;
     } else if (!canRedeem) {
-      btnHtml = `<button disabled style="background:rgba(255,255,255,0.1);color:#aaa;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:not-allowed;">需要 ${item.badge_required} 枚徽章</button>`;
+      btnHtml = `<button disabled style="background:rgba(255,255,255,0.1);color:#aaa;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:not-allowed;white-space:nowrap;">${statusMsg}</button>`;
     } else {
       const safeDesc = (item.description || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       const safeName = item.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-      btnHtml = `<button onclick="openRedeemModal('${item.id}','${safeName}','${safeDesc}','${item.badge_required}')"
-        style="background:linear-gradient(135deg,#f5a623,#f8d000);color:#1a1a2e;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:bold;cursor:pointer;">立即兌換</button>`;
+      btnHtml = `<button onclick="openRedeemModal('${item.id}','${safeName}','${safeDesc}','${item.badge_required}','${starsRequired}')"
+        style="background:linear-gradient(135deg,#f5a623,#f8d000);color:#1a1a2e;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:bold;cursor:pointer;white-space:nowrap;">立即兌換</button>`;
     }
 
-    return `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,215,0,${canRedeem?'0.3':'0.1'});border-radius:12px;padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:14px;">
-      <div style="font-size:40px;flex-shrink:0;">${item.image_emoji || '🎁'}</div>
-      <div style="flex:1;min-width:0;">
-        <div style="color:#fff;font-size:15px;font-weight:bold;margin-bottom:2px;">${item.name}</div>
-        <div style="color:#aaa;font-size:12px;margin-bottom:6px;">${item.description || ''}</div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <span style="color:#f8d000;font-size:12px;">🏅 ${item.badge_required} 枚徽章</span>
-          <span style="color:#aaa;font-size:12px;">庫存：${item.stock}</span>
-          ${item.partner_name ? `<span style="color:#888;font-size:11px;">by ${item.partner_name}</span>` : ''}
+    return `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,215,0,${canRedeem?'0.3':'0.1'});border-radius:12px;padding:16px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="font-size:40px;flex-shrink:0;">${item.image_emoji || '🎁'}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="color:#fff;font-size:15px;font-weight:bold;margin-bottom:4px;">${item.name}</div>
+          <div style="color:#aaa;font-size:12px;margin-bottom:8px;">${item.description || ''}</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            <span style="color:#f8d000;font-size:13px;">⭐ ${starsRequired} 顆星星碎片</span>
+            <span style="color:#aaa;font-size:12px;">🏅 需 ${item.badge_required} 枚徽章</span>
+            <span style="color:#aaa;font-size:12px;">庫存：${item.stock}</span>
+          </div>
         </div>
+        <div style="flex-shrink:0;">${btnHtml}</div>
       </div>
-      <div style="flex-shrink:0;">${btnHtml}</div>
     </div>`;
   }).join('');
+
+  goTo('s-shop');
 }
 
-function openRedeemModal(itemId, itemName, itemDesc, badgeRequired) {
+function openRedeemModal(itemId, itemName, itemDesc, badgeRequired, starsRequired) {
   currentRedeemItemId = itemId;
+  currentRedeemStarsRequired = parseInt(starsRequired) || 0;
   document.getElementById('redeem-item-name').textContent = itemName;
   document.getElementById('redeem-item-desc').textContent = itemDesc;
   document.getElementById('redeem-email').value = currentUser.email || '';
   document.getElementById('redeem-name').value = currentPlayer?.display_name || '';
   document.getElementById('redeem-error').textContent = '';
   document.getElementById('redeem-season-info').textContent =
-    `本季（${getCurrentSeason()}）每樣商品限兌換一次`;
+    `兌換將消耗 ${starsRequired} 顆星星碎片 ｜ 本季（${getCurrentSeason()}）限換一次`;
   const modal = document.getElementById('redeem-modal');
   modal.style.display = 'flex';
 }
@@ -3721,6 +3736,20 @@ async function confirmRedeem() {
       status: 'sent',
       season: season
     });
+
+    // 扣除星星碎片
+    const currentStars = parseInt(localStorage.getItem('mc_stars') || '0');
+    const newStars = Math.max(0, currentStars - currentRedeemStarsRequired);
+    localStorage.setItem('mc_stars', newStars);
+
+    if (currentChild) {
+      await db.from('child_stats').update({
+        total_fragments: newStars
+      }).eq('child_id', currentChild.id);
+    }
+
+    updateUserDisplay();
+    showToast(`已消耗 ${currentRedeemStarsRequired} 顆星星碎片`);
 
     closeRedeemModal();
     showRedeemSuccess(selectedCode.code, email);
