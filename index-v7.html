@@ -159,7 +159,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
   80%{transform:scale(0.95);opacity:1}100%{transform:scale(0.9);opacity:0.6}}
 
 /* ── Game Screen ── */
-#s-game{background:#000;flex-direction:column}
+#s-game{background:#000;flex-direction:column;padding-top:44px;box-sizing:border-box}
 
 /* HUD */
 .hud{width:100%;background:rgba(0,0,0,0.85);border-bottom:1px solid rgba(255,107,0,0.3);
@@ -529,6 +529,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 .btn-top-collection{background:linear-gradient(135deg,#f5a623,#f8d000);color:#1a1a2e;border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:bold;cursor:pointer;white-space:nowrap}
 .btn-top-signout{background:rgba(220,50,50,0.75);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;white-space:nowrap}
 .top-bar-username{color:#f8d000;font-size:12px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.top-bar-stars{color:#f8d000;font-size:12px;font-weight:bold;white-space:nowrap;margin-left:8px}
 
 /* ── Account Screen ── */
 .acc-tab-bar{display:flex;border-bottom:1px solid rgba(255,255,255,0.15);margin-bottom:20px}
@@ -604,6 +605,25 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
       </div>
     </div>
     <div class="auth-tagline">用數學之力召喚守護神！</div>
+  </div>
+</div>
+
+<!-- ── S-Reset-Password ── -->
+<div id="s-reset-password" class="screen">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;padding:20px;background:radial-gradient(ellipse at 50% 30%, #1a0533 0%, #0a0a2e 70%);">
+    <div style="width:100%;max-width:400px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:16px;padding:28px 24px;">
+      <h2 style="color:#f8d000;text-align:center;margin:0 0 8px">設定新密碼</h2>
+      <p style="color:#aaa;text-align:center;font-size:14px;margin:0 0 24px">請輸入你的新密碼</p>
+      <input id="reset-new-password" type="password" placeholder="新密碼（至少6字元）"
+        style="width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:8px;color:#fff;padding:12px;font-size:15px;margin-bottom:12px;box-sizing:border-box;">
+      <input id="reset-confirm-password" type="password" placeholder="確認新密碼"
+        style="width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:8px;color:#fff;padding:12px;font-size:15px;margin-bottom:16px;box-sizing:border-box;">
+      <div id="reset-error" style="color:#f44336;font-size:13px;text-align:center;margin-bottom:8px;min-height:20px;"></div>
+      <button onclick="doResetPassword()"
+        style="width:100%;background:linear-gradient(135deg,#f5a623,#f8d000);color:#1a1a2e;border:none;border-radius:10px;padding:13px;font-size:16px;font-weight:bold;cursor:pointer;">
+        確認設定新密碼
+      </button>
+    </div>
   </div>
 </div>
 
@@ -1083,6 +1103,20 @@ let battleAnsweredThisQuestion = false;
 // ═══════════════════════════════════════════════
 
 async function initAuth() {
+  const hashParams = new URLSearchParams(window.location.hash.substring(1));
+  const accessToken = hashParams.get('access_token');
+  const type = hashParams.get('type');
+
+  if (accessToken && type === 'recovery') {
+    await db.auth.setSession({
+      access_token: accessToken,
+      refresh_token: hashParams.get('refresh_token') || ''
+    });
+    window.history.replaceState(null, '', window.location.pathname);
+    showResetPasswordScreen();
+    return;
+  }
+
   const { data: { session } } = await db.auth.getSession();
   if (session) {
     currentUser = session.user;
@@ -1148,9 +1182,11 @@ const ENCOURAGE_MSGS = [
 
 function renderTopBar() {
   const name = currentPlayer ? currentPlayer.display_name : '';
+  const stars = localStorage.getItem('mc_stars') || '0';
   return `<div class="top-bar">
     <div class="top-bar-left">
       <button class="btn-top-collection" onclick="goTo('s-collection')">我的收藏</button>
+      <span class="top-bar-stars">⭐ ${stars}</span>
     </div>
     <div class="top-bar-right">
       <span class="top-bar-username">${name}</span>
@@ -1291,6 +1327,27 @@ async function showForgotPassword() {
   } else {
     if (el) { el.style.color = '#4CAF50'; el.textContent = '✅ 重設信已寄出，請查收信箱！'; }
   }
+}
+
+function showResetPasswordScreen() {
+  goTo('s-reset-password');
+}
+
+async function doResetPassword() {
+  const newPw = document.getElementById('reset-new-password').value;
+  const confirmPw = document.getElementById('reset-confirm-password').value;
+  const errEl = document.getElementById('reset-error');
+
+  if (!newPw || !confirmPw) { errEl.textContent = '請填寫所有欄位'; return; }
+  if (newPw.length < 6) { errEl.textContent = '密碼至少需要 6 個字元'; return; }
+  if (newPw !== confirmPw) { errEl.textContent = '兩次密碼不一致'; return; }
+
+  const { error } = await db.auth.updateUser({ password: newPw });
+  if (error) { errEl.textContent = '設定失敗：' + error.message; return; }
+
+  showToast('✅ 密碼已重設！請重新登入');
+  await db.auth.signOut();
+  goTo('s-auth');
 }
 
 function translateError(msg) {
@@ -2356,6 +2413,7 @@ function addStarFragments(amount) {
   const current = parseInt(localStorage.getItem('mc_stars') || '0');
   localStorage.setItem('mc_stars', current + amount);
   refreshStarsDisplay();
+  updateUserDisplay();
 }
 
 // ═══════════════════════════════════════════════
@@ -2973,13 +3031,15 @@ function subscribeToBattleRoom(roomId) {
 }
 
 function handleBattleRoomUpdate(room) {
-  const prevQuestion = battleRoom ? (battleRoom.current_question || 0) : 0;
+  const prevQuestion = battleRoom ? (battleRoom.current_question || 0) : -1;
+  const newQuestion = room.current_question || 0;
   battleRoom = room;
 
   if (room.status === 'ready' && !battleStarted) { startBattle(); return; }
 
   if (room.status === 'finished' && room.winner_id) {
     if (battleServerTimer) clearInterval(battleServerTimer);
+    window._countingDown = false;
     const iWin = room.winner_id === currentUser.id;
     const feedback = document.getElementById('battle-feedback');
     if (feedback) {
@@ -2992,32 +3052,11 @@ function handleBattleRoomUpdate(room) {
 
   const opScore = currentUser.id === room.player1_id ? room.player2_score : room.player1_score;
   const el = document.getElementById('battle-opponent-score');
-  if (el) el.textContent = opScore || 0;
+  if (el) el.textContent = opScore;
 
-  const newQuestion = room.current_question || 0;
-  if (newQuestion > prevQuestion) {
+  if (newQuestion > prevQuestion && !window._countingDown) {
     if (battleServerTimer) clearInterval(battleServerTimer);
-    const feedback = document.getElementById('battle-feedback');
-    let countdown = 3;
-    if (feedback) {
-      feedback.textContent = feedback.textContent.replace('⏳ 等待對手...', '').trim();
-      feedback.textContent += `　（${countdown} 秒後下一題）`;
-    }
-    const countdownTimer = setInterval(() => {
-      countdown--;
-      if (feedback && countdown > 0) {
-        feedback.textContent = feedback.textContent
-          .replace(/（\d+ 秒後下一題）/, `（${countdown} 秒後下一題）`);
-      }
-      if (countdown <= 0) {
-        clearInterval(countdownTimer);
-        if (newQuestion >= battleQuestions.length) {
-          finishBattle();
-        } else {
-          syncBattleQuestion();
-        }
-      }
-    }, 1000);
+    startCountdownToNextQuestion(newQuestion);
   }
 
   if (room.player1_finished && room.player2_finished) {
@@ -3113,28 +3152,27 @@ async function handleTimeout() {
   if (battleAnsweredThisQuestion) return;
   battleAnsweredThisQuestion = true;
 
-  if (battleServerTimer) clearInterval(battleServerTimer);
+  // 不 clearInterval，讓計時器繼續跑到 0
 
   const inp = document.getElementById('battle-answer-input');
   const btn = document.getElementById('battle-submit-btn');
   if (inp) inp.disabled = true;
   if (btn) btn.disabled = true;
 
-  const qIdx = battleRoom.current_question || 0;
-  const q = battleQuestions[qIdx];
+  const inputArea = document.getElementById('battle-input-area');
+  if (inputArea) inputArea.style.display = 'none';
+
+  const q = battleQuestions[battleRoom.current_question || 0];
   const feedback = document.getElementById('battle-feedback');
   if (feedback) {
     feedback.style.color = '#ff9800';
-    feedback.textContent = `⏰ 時間到！答案是 ${q.answer}`;
+    feedback.textContent = `⏰ 時間到！答案是 ${q?.answer}　⏳ 等待對手...`;
   }
-
-  const inputArea = document.getElementById('battle-input-area');
-  if (inputArea) inputArea.style.display = 'none';
 
   await db.from('battle_answers').insert({
     room_id: battleRoom.id,
     player_id: currentUser.id,
-    question_index: qIdx,
+    question_index: battleRoom.current_question || 0,
     answer: '',
     is_correct: false,
     time_spent: 10000
@@ -3174,11 +3212,14 @@ async function submitBattleAnswer() {
   if (isNaN(userAnswer)) return;
 
   battleAnsweredThisQuestion = true;
-  if (battleServerTimer) clearInterval(battleServerTimer);
+  // 注意：不清除 battleServerTimer，讓計時繼續跑到 10 秒
 
   if (inp) inp.disabled = true;
   const btn = document.getElementById('battle-submit-btn');
   if (btn) btn.disabled = true;
+
+  const inputArea = document.getElementById('battle-input-area');
+  if (inputArea) inputArea.style.display = 'none';
 
   const qIdx = battleRoom.current_question || 0;
   const q = battleQuestions[qIdx];
@@ -3196,12 +3237,10 @@ async function submitBattleAnswer() {
       feedback.style.color = '#f44336';
       feedback.textContent = `❌ 答案是 ${q.answer}`;
     }
+    feedback.textContent += '　⏳ 等待對手...';
   }
 
   document.getElementById('battle-my-score').textContent = battleMyScore;
-
-  const inputArea = document.getElementById('battle-input-area');
-  if (inputArea) inputArea.style.display = 'none';
 
   await db.from('battle_answers').insert({
     room_id: battleRoom.id,
@@ -3223,44 +3262,76 @@ async function submitBattleAnswer() {
     [skipField]: 0
   }).eq('id', battleRoom.id);
 
-  if (feedback) feedback.textContent += '　⏳ 等待對手...';
-
   tryAdvanceQuestion();
 }
 
 async function tryAdvanceQuestion() {
-  const { data: room } = await db
+  const { data: room, error } = await db
     .from('battle_rooms')
     .select('*')
     .eq('id', battleRoom.id)
     .single();
 
-  if (!room) return;
+  if (error || !room) return;
 
-  const bothAnswered = room.p1_answered && room.p2_answered;
   const startAt = room.question_start_at
     ? new Date(room.question_start_at).getTime()
     : 0;
   const elapsed = Date.now() - startAt;
-  const timeUp = elapsed >= 10000;
+  const timeUp = elapsed >= 10500;
+  const bothAnswered = room.p1_answered && room.p2_answered;
 
   if (!bothAnswered && !timeUp) return;
 
   const nextQ = (room.current_question || 0) + 1;
   const nowStr = new Date().toISOString();
 
-  const { error } = await db.from('battle_rooms').update({
+  battleRoom = {
+    ...room,
     current_question: nextQ,
     question_start_at: nowStr,
     p1_answered: false,
     p2_answered: false
-  })
-  .eq('id', room.id)
-  .eq('current_question', room.current_question);
+  };
 
-  if (error) {
-    console.log('另一方已推進題目');
+  await db.from('battle_rooms').update({
+    current_question: nextQ,
+    question_start_at: nowStr,
+    p1_answered: false,
+    p2_answered: false
+  }).eq('id', room.id);
+
+  startCountdownToNextQuestion(nextQ);
+}
+
+function startCountdownToNextQuestion(nextQ) {
+  if (window._countingDown) return;
+  window._countingDown = true;
+
+  const feedback = document.getElementById('battle-feedback');
+  let countdown = 3;
+
+  if (feedback) {
+    const currentText = feedback.textContent.replace('⏳ 等待對手...', '').trim();
+    feedback.textContent = currentText + `　（${countdown} 秒後下一題）`;
   }
+
+  const timer = setInterval(() => {
+    countdown--;
+    if (feedback && countdown > 0) {
+      feedback.textContent = feedback.textContent
+        .replace(/（\d+ 秒後下一題）/, `（${countdown} 秒後下一題）`);
+    }
+    if (countdown <= 0) {
+      clearInterval(timer);
+      window._countingDown = false;
+      if (nextQ >= battleQuestions.length) {
+        finishBattle();
+      } else {
+        syncBattleQuestion();
+      }
+    }
+  }, 1000);
 }
 
 async function finishBattle() {
