@@ -3169,14 +3169,16 @@ async function handleTimeout() {
     feedback.textContent = `⏰ 時間到！答案是 ${q?.answer}　⏳ 等待對手...`;
   }
 
-  await db.from('battle_answers').insert({
-    room_id: battleRoom.id,
-    player_id: currentUser.id,
-    question_index: battleRoom.current_question || 0,
-    answer: '',
-    is_correct: false,
-    time_spent: 10000
-  }).catch(e => console.error('記錄超時失敗', e));
+  try {
+    await db.from('battle_answers').insert({
+      room_id: battleRoom.id,
+      player_id: currentUser.id,
+      question_index: battleRoom.current_question || 0,
+      answer: '',
+      is_correct: false,
+      time_spent: 10000
+    });
+  } catch(e) { console.error('記錄超時失敗', e); }
 
   const isP1 = currentUser.id === battleRoom.player1_id;
   const answeredField = isP1 ? 'p1_answered' : 'p2_answered';
@@ -3242,14 +3244,16 @@ async function submitBattleAnswer() {
 
   document.getElementById('battle-my-score').textContent = battleMyScore;
 
-  await db.from('battle_answers').insert({
-    room_id: battleRoom.id,
-    player_id: currentUser.id,
-    question_index: qIdx,
-    answer: String(userAnswer),
-    is_correct: isCorrect,
-    time_spent: (10 - battleTimeLeft) * 1000
-  }).catch(e => console.error('記錄答案失敗', e));
+  try {
+    await db.from('battle_answers').insert({
+      room_id: battleRoom.id,
+      player_id: currentUser.id,
+      question_index: qIdx,
+      answer: String(userAnswer),
+      is_correct: isCorrect,
+      time_spent: (10 - battleTimeLeft) * 1000
+    });
+  } catch(e) { console.error('記錄答案失敗', e); }
 
   const isP1 = currentUser.id === battleRoom.player1_id;
   const scoreField = isP1 ? 'player1_score' : 'player2_score';
