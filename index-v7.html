@@ -159,11 +159,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
   80%{transform:scale(0.95);opacity:1}100%{transform:scale(0.9);opacity:0.6}}
 
 /* ── Game Screen ── */
-#s-game{background:#000;display:flex;flex-direction:column;position:relative;height:100vh;height:100dvh;padding-top:44px;box-sizing:border-box;overflow:hidden}
+#s-game{background:#000;flex-direction:column;height:100vh;padding-top:44px;box-sizing:border-box;overflow:hidden}
 
 /* HUD */
 .hud{width:100%;background:rgba(0,0,0,0.85);border-bottom:1px solid rgba(255,107,0,0.3);
-  padding:5px 10px;display:flex;align-items:center;gap:6px;flex:0 0 auto;min-height:54px}
+  padding:5px 10px;display:flex;align-items:center;gap:6px;flex-shrink:0;min-height:54px}
 .hud-left{display:flex;flex-direction:column;align-items:flex-start;min-width:70px}
 .hearts-row{font-size:15px;letter-spacing:1px;line-height:1.2}
 .hud-center{flex:1;text-align:center;min-width:0}
@@ -261,7 +261,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 /* Question area */
 .q-area{width:100%;background:rgba(0,0,0,0.8);
   border-top:1px solid rgba(255,107,0,0.35);border-bottom:1px solid rgba(255,107,0,0.35);
-  padding:10px 12px;flex:0 0 auto}
+  padding:10px 12px;flex-shrink:0}
 .q-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;gap:10px}
 .q-bar-wrap{flex:1;height:5px;background:#1a0a00;border-radius:3px;overflow:hidden}
 .q-bar{height:100%;background:linear-gradient(90deg,#00d4ff,#ffd700);
@@ -275,7 +275,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
   min-height:30px;letter-spacing:4px;margin-top:3px}
 
 /* Numpad */
-.numpad{width:100%;max-width:370px;margin:0 auto;padding:8px;flex:0 0 auto;
+.numpad{width:100%;max-width:370px;margin:0 auto;padding:8px;flex-shrink:0;
   display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .nbtn{height:52px;border:none;border-radius:10px;font-size:21px;font-weight:700;
   font-family:'Orbitron',sans-serif;cursor:pointer;transition:all 0.1s;user-select:none;
@@ -719,7 +719,6 @@ select option{background:#1a1a3e;color:#fff}
 
 <!-- ── S6: Game ── -->
 <div id="s-game" class="screen">
-  <div class="top-bar-placeholder"></div>
   <div class="screen-flash-overlay" id="sfo"></div>
 
   <!-- HUD -->
@@ -1882,12 +1881,10 @@ function ac(){
   return _ac;
 }
 function unlockAudio(){
-  try{
-    if(typeof _ac!=='undefined'&&_ac&&_ac.state==='suspended'){
-      _ac.resume().then(()=>console.log('[音效] 已解鎖，state:',_ac.state));
-    }
-    if(!_ac){ac();}
-  }catch(e){console.error('[音效] unlockAudio 失敗:',e);}
+  if(_ac && _ac.state==='suspended'){
+    _ac.resume().then(()=>console.log('音效已解鎖'));
+  }
+  try{ac();}catch(e){}
 }
 function tone(f,d,t='sine',v=0.3,a=0.01){
   try{
@@ -1902,7 +1899,7 @@ function tone(f,d,t='sine',v=0.3,a=0.01){
 }
 function sfx(n){
   if(localStorage.getItem('sound_on')==='false') return;
-  try{if(_ac&&_ac.state==='suspended')_ac.resume();}catch(e){}
+  if(_ac && _ac.state==='suspended') _ac.resume();
   if(n==='correct'){tone(880,.1,'sine',.4);setTimeout(()=>tone(1320,.15,'sine',.3),80);}
   else if(n==='wrong'){tone(180,.4,'sawtooth',.25);}
   else if(n==='fail'){[440,370,310,250].forEach((f,i)=>setTimeout(()=>tone(f,.25,'sine',.3),i*130));}
@@ -2485,7 +2482,7 @@ function handleInput(v){
 }
 
 document.querySelectorAll('.nbtn').forEach(b=>{
-  b.addEventListener('pointerdown',e=>{e.preventDefault();unlockAudio();handleInput(b.dataset.v);});
+  b.addEventListener('pointerdown',e=>{e.preventDefault();handleInput(b.dataset.v);});
 });
 
 document.addEventListener('keydown',e=>{
@@ -2523,25 +2520,8 @@ function addStarFragments(amount) {
 // ═══════════════════════════════════════════════
 // DAILY TASKS
 // ═══════════════════════════════════════════════
-function getTodayTW() {
-  const now = new Date();
-  const twOffset = 8 * 60;
-  const localOffset = now.getTimezoneOffset();
-  const twTime = new Date(now.getTime() + (twOffset + localOffset) * 60000);
-  return twTime.toISOString().split('T')[0];
-}
-
-function getYesterdayTW() {
-  const now = new Date();
-  const twOffset = 8 * 60;
-  const localOffset = now.getTimezoneOffset();
-  const twTime = new Date(now.getTime() + (twOffset + localOffset) * 60000);
-  twTime.setDate(twTime.getDate() - 1);
-  return twTime.toISOString().split('T')[0];
-}
-
 function initDailyTasks() {
-  const today = getTodayTW();
+  const today = new Date().toISOString().split('T')[0];
   const savedDate = localStorage.getItem('daily_tasks_date');
   if (savedDate !== today) {
     localStorage.setItem('daily_tasks_date', today);
@@ -2604,11 +2584,13 @@ function renderTasksScreen() {
 // LOGIN STREAK
 // ═══════════════════════════════════════════════
 function checkLoginStreak() {
-  const today = getTodayTW();
+  const today = new Date().toISOString().split('T')[0];
   const lastLogin = localStorage.getItem('last_login_date');
   let streak = parseInt(localStorage.getItem('login_streak') || '0');
   if (lastLogin === today) return;
-  const yesterdayStr = getYesterdayTW();
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split('T')[0];
   streak = (lastLogin === yesterdayStr) ? streak + 1 : 1;
   localStorage.setItem('login_streak', streak);
   localStorage.setItem('last_login_date', today);
@@ -3757,18 +3739,16 @@ async function confirmRedeem() {
 
     // 扣除星星碎片
     const currentStars = parseInt(localStorage.getItem('mc_stars') || '0');
-    const newStars = Math.max(0, currentStars - (currentRedeemStarsRequired || 0));
-    localStorage.setItem('mc_stars', String(newStars));
-    updateUserDisplay();
+    const newStars = Math.max(0, currentStars - currentRedeemStarsRequired);
+    localStorage.setItem('mc_stars', newStars);
 
     if (currentChild) {
-      try {
-        await db.from('child_stats').update({
-          total_fragments: newStars
-        }).eq('child_id', currentChild.id);
-      } catch(e) { console.error('同步星星失敗', e); }
+      await db.from('child_stats').update({
+        total_fragments: newStars
+      }).eq('child_id', currentChild.id);
     }
 
+    updateUserDisplay();
     showToast(`已消耗 ${currentRedeemStarsRequired} 顆星星碎片`);
 
     closeRedeemModal();
@@ -3989,9 +3969,8 @@ window.addEventListener('DOMContentLoaded',()=>{
   renderWorld();
   refreshStarsDisplay();
   initAuth();
-  document.addEventListener('touchstart',unlockAudio,{passive:true});
-  document.addEventListener('touchend',unlockAudio,{passive:true});
-  document.addEventListener('click',unlockAudio);
+  document.addEventListener('touchstart',unlockAudio,{once:true});
+  document.addEventListener('click',unlockAudio,{once:true});
 
   setInterval(async () => {
     if (currentUser) {
