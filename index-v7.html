@@ -159,7 +159,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
   80%{transform:scale(0.95);opacity:1}100%{transform:scale(0.9);opacity:0.6}}
 
 /* ── Game Screen ── */
-#s-game{background:#000;flex-direction:column;height:100vh;padding-top:44px;box-sizing:border-box;overflow:hidden}
+#s-game{background:#000;flex-direction:column;height:100svh;padding-top:44px;box-sizing:border-box;overflow:hidden}
 
 /* HUD */
 .hud{width:100%;background:rgba(0,0,0,0.85);border-bottom:1px solid rgba(255,107,0,0.3);
@@ -526,6 +526,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 .top-bar{position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:rgba(10,10,46,0.92);backdrop-filter:blur(8px);z-index:500;height:44px;box-sizing:border-box;width:100%}
 .top-bar-left{display:flex;align-items:center}
 .top-bar-right{display:flex;align-items:center;gap:8px}
+.btn-top-home{background:rgba(255,255,255,0.1);border:none;border-radius:8px;padding:5px 8px;font-size:16px;cursor:pointer;line-height:1;}
 .btn-top-collection{background:linear-gradient(135deg,#f5a623,#f8d000);color:#1a1a2e;border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:bold;cursor:pointer;white-space:nowrap}
 .btn-top-signout{background:rgba(220,50,50,0.75);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;white-space:nowrap}
 .top-bar-username{color:#f8d000;font-size:12px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1277,6 +1278,7 @@ function renderTopBar() {
   const stars = localStorage.getItem('mc_stars') || '0';
   return `<div class="top-bar">
     <div class="top-bar-left">
+      <button class="btn-top-home" onclick="goTo('s-title')" title="回主選單">🏠</button>
       <button class="btn-top-collection" onclick="goTo('s-collection')">我的收藏</button>
       <span class="top-bar-stars">⭐ ${stars}</span>
     </div>
@@ -1881,10 +1883,10 @@ function ac(){
   return _ac;
 }
 function unlockAudio(){
-  if(_ac && _ac.state==='suspended'){
-    _ac.resume().then(()=>console.log('音效已解鎖'));
-  }
-  try{ac();}catch(e){}
+  try {
+    if(!_ac) ac();
+    if(_ac && _ac.state==='suspended') _ac.resume();
+  } catch(e){}
 }
 function tone(f,d,t='sine',v=0.3,a=0.01){
   try{
@@ -1899,7 +1901,7 @@ function tone(f,d,t='sine',v=0.3,a=0.01){
 }
 function sfx(n){
   if(localStorage.getItem('sound_on')==='false') return;
-  if(_ac && _ac.state==='suspended') _ac.resume();
+  try { if(_ac && _ac.state==='suspended') _ac.resume(); } catch(e){}
   if(n==='correct'){tone(880,.1,'sine',.4);setTimeout(()=>tone(1320,.15,'sine',.3),80);}
   else if(n==='wrong'){tone(180,.4,'sawtooth',.25);}
   else if(n==='fail'){[440,370,310,250].forEach((f,i)=>setTimeout(()=>tone(f,.25,'sine',.3),i*130));}
@@ -2482,7 +2484,11 @@ function handleInput(v){
 }
 
 document.querySelectorAll('.nbtn').forEach(b=>{
-  b.addEventListener('pointerdown',e=>{e.preventDefault();handleInput(b.dataset.v);});
+  b.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    try { if(_ac && _ac.state==='suspended') _ac.resume(); else if(!_ac) ac(); } catch(e2){}
+    handleInput(b.dataset.v);
+  });
 });
 
 document.addEventListener('keydown',e=>{
@@ -2512,16 +2518,36 @@ function showToast(msg) {
 
 function addStarFragments(amount) {
   const current = parseInt(localStorage.getItem('mc_stars') || '0');
-  localStorage.setItem('mc_stars', current + amount);
+  localStorage.setItem('mc_stars', String(current + amount));
   refreshStarsDisplay();
   updateUserDisplay();
+}
+
+// ═══════════════════════════════════════════════
+// TIMEZONE HELPERS
+// ═══════════════════════════════════════════════
+function getTodayTW() {
+  const now = new Date();
+  const twOffset = 8 * 60;
+  const localOffset = now.getTimezoneOffset();
+  const twTime = new Date(now.getTime() + (twOffset + localOffset) * 60000);
+  return twTime.toISOString().split('T')[0];
+}
+
+function getYesterdayTW() {
+  const now = new Date();
+  const twOffset = 8 * 60;
+  const localOffset = now.getTimezoneOffset();
+  const twTime = new Date(now.getTime() + (twOffset + localOffset) * 60000);
+  twTime.setDate(twTime.getDate() - 1);
+  return twTime.toISOString().split('T')[0];
 }
 
 // ═══════════════════════════════════════════════
 // DAILY TASKS
 // ═══════════════════════════════════════════════
 function initDailyTasks() {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayTW();
   const savedDate = localStorage.getItem('daily_tasks_date');
   if (savedDate !== today) {
     localStorage.setItem('daily_tasks_date', today);
@@ -2584,13 +2610,11 @@ function renderTasksScreen() {
 // LOGIN STREAK
 // ═══════════════════════════════════════════════
 function checkLoginStreak() {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayTW();
   const lastLogin = localStorage.getItem('last_login_date');
   let streak = parseInt(localStorage.getItem('login_streak') || '0');
   if (lastLogin === today) return;
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  const yesterdayStr = getYesterdayTW();
   streak = (lastLogin === yesterdayStr) ? streak + 1 : 1;
   localStorage.setItem('login_streak', streak);
   localStorage.setItem('last_login_date', today);
@@ -3619,9 +3643,12 @@ async function loadShop() {
     } else if (!canRedeem) {
       btnHtml = `<button disabled style="background:rgba(255,255,255,0.1);color:#aaa;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:not-allowed;white-space:nowrap;">${statusMsg}</button>`;
     } else {
-      const safeDesc = (item.description || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-      const safeName = item.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-      btnHtml = `<button onclick="openRedeemModal('${item.id}','${safeName}','${safeDesc}','${item.badge_required}','${starsRequired}')"
+      btnHtml = `<button class="btn-redeem-item"
+        data-id="${item.id}"
+        data-name="${encodeURIComponent(item.name)}"
+        data-desc="${encodeURIComponent(item.description||'')}"
+        data-badge="${item.badge_required}"
+        data-stars="${starsRequired}"
         style="background:linear-gradient(135deg,#f5a623,#f8d000);color:#1a1a2e;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:bold;cursor:pointer;white-space:nowrap;">立即兌換</button>`;
     }
 
@@ -3641,6 +3668,21 @@ async function loadShop() {
       </div>
     </div>`;
   }).join('');
+
+  // 綁定兌換按鈕事件
+  setTimeout(() => {
+    document.querySelectorAll('.btn-redeem-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        openRedeemModal(
+          btn.dataset.id,
+          decodeURIComponent(btn.dataset.name),
+          decodeURIComponent(btn.dataset.desc),
+          btn.dataset.badge,
+          btn.dataset.stars
+        );
+      });
+    });
+  }, 100);
 
   goTo('s-shop');
 }
@@ -3740,7 +3782,7 @@ async function confirmRedeem() {
     // 扣除星星碎片
     const currentStars = parseInt(localStorage.getItem('mc_stars') || '0');
     const newStars = Math.max(0, currentStars - currentRedeemStarsRequired);
-    localStorage.setItem('mc_stars', newStars);
+    localStorage.setItem('mc_stars', String(newStars));
 
     if (currentChild) {
       await db.from('child_stats').update({
