@@ -665,6 +665,7 @@ select option{background:#1a1a3e;color:#fff}
       <button class="menu-btn" onclick="loadShop()">🏪 星際商店</button>
       <button id="admin-btn" onclick="openAdmin()" style="display:none;background:rgba(150,50,50,0.6);" class="menu-btn">⚙️ 管理後台</button>
       <button id="parent-mode-btn" onclick="enterParentMode()" style="display:none;background:linear-gradient(135deg,#667eea,#764ba2);" class="menu-btn">👨‍👩‍👧 家長模式</button>
+      <button id="parent-mail-btn" onclick="openParentMail()" style="display:none;background:linear-gradient(135deg,#e91e63,#c2185b);" class="menu-btn">💌 家長留言</button>
     </div>
     <div class="title-tagline">用數學之力召喚守護神！</div>
   </div>
@@ -1079,6 +1080,21 @@ select option{background:#1a1a3e;color:#fff}
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- ── S-Mailbox: Parent Messages ── -->
+<div id="s-mailbox" class="screen">
+  <div class="top-bar-placeholder"></div>
+  <div style="max-width:480px;margin:0 auto;padding:12px 16px 80px;">
+    <div style="text-align:center;margin-bottom:20px;">
+      <h2 style="color:#f8d000;font-size:22px;margin:0;">💌 家長留言</h2>
+      <p style="color:#aaa;font-size:13px;margin:8px 0 0;">來自家長的鼓勵訊息</p>
+    </div>
+    <div id="mailbox-list">
+      <p style="color:#aaa;text-align:center;padding:40px 0;">載入中...</p>
+    </div>
+    <button onclick="goTo('s-title')" style="width:100%;background:rgba(255,255,255,0.08);border:none;border-radius:10px;color:#aaa;padding:12px;cursor:pointer;margin-top:8px;">返回主選單</button>
   </div>
 </div>
 
@@ -2462,6 +2478,7 @@ function endGame(result){
     const bonusMap={S:100,A:50,B:30,C:10};
     const bonus=bonusMap[grade];
     SS.addStars(bonus);
+    refreshStarsDisplay();
     if(grade==='S') sfx('srank'); else sfx('win');
     updateDailyTask('level_complete', 1);
     if(LEVELS[curId].op==='+') updateDailyTask('addition', true);
@@ -2602,6 +2619,9 @@ function quitGame(){
 function refreshStarsDisplay(){
   const stars = SS.stars();
   document.querySelectorAll('.user-stars-display').forEach(el => {
+    el.textContent = `⭐ ${stars}`;
+  });
+  document.querySelectorAll('.top-bar-stars').forEach(el => {
     el.textContent = `⭐ ${stars}`;
   });
 }
@@ -4339,6 +4359,28 @@ async function afterLogin() {
   const parentBtn = document.getElementById('parent-mode-btn');
   if (parentBtn) parentBtn.style.display = hasLinkedChildren ? 'block' : 'none';
 
+  // 檢查自己是否是某人的孩子，決定是否顯示家長留言按鈕
+  const { data: asChild } = await db
+    .from('parent_child_links')
+    .select('parent_id')
+    .eq('child_player_id', currentUser.id)
+    .limit(1);
+
+  const { data: unread } = await db
+    .from('parent_messages')
+    .select('id')
+    .eq('child_player_id', currentUser.id)
+    .eq('is_read', false);
+
+  const mailBtn = document.getElementById('parent-mail-btn');
+  if(mailBtn && asChild && asChild.length > 0) {
+    mailBtn.style.display = 'block';
+    const unreadCount = unread?.length || 0;
+    mailBtn.innerHTML = unreadCount > 0
+      ? `💌 家長留言 <span style="background:#f44336;color:#fff;font-size:11px;padding:1px 6px;border-radius:10px;margin-left:4px;">${unreadCount}</span>`
+      : '💌 家長留言';
+  }
+
   if (hasLinkedChildren) {
     showModeSelect();
   } else {
@@ -4912,6 +4954,54 @@ async function unlinkChild(linkId) {
   await db.from('parent_child_links').delete().eq('id', linkId);
   showToast('已移除連結');
   loadParentLinkedChildren();
+}
+
+async function openParentMail() {
+  goTo('s-mailbox');
+  const el = document.getElementById('mailbox-list');
+  el.innerHTML = '<p style="color:#aaa;text-align:center;padding:40px 0;">載入中...</p>';
+
+  const { data: messages } = await db
+    .from('parent_messages')
+    .select('*, parent:players!parent_id(display_name, avatar_id)')
+    .eq('child_player_id', currentUser.id)
+    .order('created_at', { ascending: false });
+
+  if(!messages || !messages.length) {
+    el.innerHTML = '<div style="text-align:center;padding:40px 20px;"><div style="font-size:48px;margin-bottom:12px;">💌</div><p style="color:#aaa;">還沒有收到家長留言</p></div>';
+    return;
+  }
+
+  const unreadIds = messages.filter(m => !m.is_read).map(m => m.id);
+  if(unreadIds.length > 0) {
+    await db.from('parent_messages')
+      .update({ is_read: true })
+      .in('id', unreadIds);
+    // 清除按鈕紅點
+    const mailBtn = document.getElementById('parent-mail-btn');
+    if(mailBtn) mailBtn.innerHTML = '💌 家長留言';
+  }
+
+  el.innerHTML = messages.map(m => {
+    const date = new Date(m.created_at).toLocaleString('zh-TW', {
+      month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'
+    });
+    const isNew = !m.is_read;
+    const avatar = getAvatar(m.parent?.avatar_id);
+    return `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,215,0,${isNew?'0.5':'0.15'});border-radius:12px;padding:16px;margin-bottom:12px;position:relative;">
+      ${isNew ? '<span style="position:absolute;top:10px;right:12px;background:#f44336;color:#fff;font-size:10px;padding:2px 6px;border-radius:10px;">NEW</span>' : ''}
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="font-size:24px;">${avatar}</span>
+        <div>
+          <div style="color:#f8d000;font-size:14px;font-weight:bold;">${m.parent?.display_name || '家長'}</div>
+          <div style="color:#555;font-size:11px;">${date}</div>
+        </div>
+      </div>
+      <div style="color:#fff;font-size:15px;line-height:1.7;background:rgba(255,215,0,0.06);border-radius:8px;padding:12px;">
+        ${m.message}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 async function checkParentMessages() {
