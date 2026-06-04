@@ -1178,6 +1178,18 @@ select option{background:#1a1a3e;color:#fff}
           <div class="avatar-option" data-avatar-id="hero8" onclick="selectAvatar('hero8',this)">🔥<div style="font-size:11px;color:#aaa;margin-top:4px">火焰術士</div></div>
         </div>
       </div>
+      <div class="acc-card" style="margin-bottom:14px;">
+        <div class="acc-label" style="margin-bottom:8px;">👨‍👩‍👧 家長功能</div>
+        <p style="color:#aaa;font-size:13px;margin:0 0 12px;">
+          如果你是家長，可以連結孩子的帳號來查看學習報告。<br>
+          請輸入孩子帳號的 8 碼玩家 ID。
+        </p>
+        <input id="acc-child-id-input" type="text" placeholder="例如：AB12CD34"
+          style="width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:8px;color:#fff;padding:10px;font-size:14px;margin-bottom:10px;box-sizing:border-box;text-transform:uppercase;">
+        <button onclick="linkChildFromAccount()" class="acc-btn">連結孩子帳號</button>
+        <div id="acc-link-result" style="font-size:13px;text-align:center;margin-top:8px;min-height:20px;"></div>
+        <div id="acc-linked-children" style="margin-top:12px;"></div>
+      </div>
       <button onclick="goTo('s-title')" class="acc-btn acc-btn-secondary">返回主選單</button>
     </div>
 
@@ -1392,7 +1404,20 @@ async function loadPlayerData() {
     .select('*')
     .eq('id', currentUser.id)
     .single();
-  currentPlayer = data;
+  if (!data) {
+    const { data: newPlayer, error: insertError } = await db
+      .from('players')
+      .insert({
+        id: currentUser.id,
+        email: currentUser.email,
+        display_name: currentUser.email.split('@')[0]
+      })
+      .select()
+      .single();
+    if (!insertError) currentPlayer = newPlayer;
+  } else {
+    currentPlayer = data;
+  }
   updateUserDisplay();
 }
 
@@ -3152,18 +3177,22 @@ function switchAccTab(idx) {
 }
 
 function openAccountScreen() {
-  if(!currentUser||!currentPlayer) return;
+  if(!currentUser) return;
   const shortId = currentUser.id.replace(/-/g,'').substring(0,8).toUpperCase();
   document.getElementById('acc-player-id').textContent = shortId;
   document.getElementById('acc-email').textContent = currentUser.email;
-  document.getElementById('acc-current-name').textContent = currentPlayer.display_name;
+  document.getElementById('acc-current-name').textContent =
+    currentPlayer?.display_name || '（未設定）';
   const soundOn = localStorage.getItem('sound_on') !== 'false';
-  document.getElementById('sound-toggle').textContent = soundOn ? '🔊 音效開啟' : '🔇 音效關閉';
+  document.getElementById('sound-toggle').textContent =
+    soundOn ? '🔊 音效開啟' : '🔇 音效關閉';
   document.querySelectorAll('.avatar-option').forEach(el => {
-    el.classList.toggle('avatar-selected', el.dataset.avatarId === (currentPlayer.avatar_id||'hero1'));
+    el.classList.toggle('avatar-selected',
+      el.dataset.avatarId === (currentPlayer?.avatar_id||'hero1'));
   });
   switchAccTab(0);
   renderAchievements();
+  loadAccLinkedChildren();
   goTo('s-account');
 }
 
@@ -4632,6 +4661,112 @@ async function loadParentLinkedChildren() {
         </div>`).join('')
       : '<p style="color:#aaa;font-size:13px;">還沒有連結孩子帳號</p>';
   }
+}
+
+async function linkChildFromAccount() {
+  const input = document.getElementById('acc-child-id-input').value.trim().toUpperCase();
+  const resultEl = document.getElementById('acc-link-result');
+
+  if(input.length !== 8) {
+    resultEl.style.color = '#f44336';
+    resultEl.textContent = '請輸入 8 碼玩家 ID';
+    return;
+  }
+
+  resultEl.style.color = '#aaa';
+  resultEl.textContent = '搜尋中...';
+
+  const { data: players } = await db.from('players').select('id, display_name, avatar_id');
+  const matched = (players||[]).find(p =>
+    p.id.replace(/-/g,'').substring(0,8).toUpperCase() === input
+  );
+
+  if(!matched) {
+    resultEl.style.color = '#f44336';
+    resultEl.textContent = '找不到此玩家 ID';
+    return;
+  }
+
+  if(matched.id === currentUser.id) {
+    resultEl.style.color = '#f44336';
+    resultEl.textContent = '不能連結自己的帳號';
+    return;
+  }
+
+  const { error } = await db.from('parent_child_links').insert({
+    parent_id: currentUser.id,
+    child_player_id: matched.id,
+    nickname: matched.display_name
+  });
+
+  if(error) {
+    if(error.message.includes('duplicate')) {
+      resultEl.style.color = '#ff9800';
+      resultEl.textContent = '已經連結過此帳號';
+    } else {
+      resultEl.style.color = '#f44336';
+      resultEl.textContent = '連結失敗：' + error.message;
+    }
+    return;
+  }
+
+  resultEl.style.color = '#4CAF50';
+  resultEl.textContent = `✅ 已成功連結 ${matched.display_name}！`;
+  document.getElementById('acc-child-id-input').value = '';
+
+  loadAccLinkedChildren();
+
+  const { data: links } = await db
+    .from('parent_child_links')
+    .select('*, child:players!child_player_id(id, display_name, avatar_id)')
+    .eq('parent_id', currentUser.id);
+  linkedChildren = links || [];
+
+  const parentBtn = document.getElementById('parent-mode-btn');
+  if(parentBtn) parentBtn.style.display = 'block';
+
+  showToast('✅ 連結成功！現在可以使用家長模式');
+}
+
+async function loadAccLinkedChildren() {
+  const { data: links } = await db
+    .from('parent_child_links')
+    .select('*, child:players!child_player_id(id, display_name, avatar_id)')
+    .eq('parent_id', currentUser.id);
+
+  const el = document.getElementById('acc-linked-children');
+  if(!el) return;
+
+  if(!links || !links.length) {
+    el.innerHTML = '';
+    return;
+  }
+
+  el.innerHTML = `<div style="color:#aaa;font-size:12px;margin-bottom:8px;">已連結的孩子：</div>` +
+    links.map(link => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px;background:rgba(255,255,255,0.04);border-radius:8px;margin-bottom:6px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:18px;">${getAvatar(link.child?.avatar_id)}</span>
+          <span style="color:#fff;font-size:13px;">${link.nickname || link.child?.display_name}</span>
+        </div>
+        <button onclick="unlinkChildFromAccount('${link.id}')"
+          style="background:rgba(220,50,50,0.5);color:#fff;border:none;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px;">移除</button>
+      </div>
+    `).join('');
+}
+
+async function unlinkChildFromAccount(linkId) {
+  if(!confirm('確定要移除這個連結嗎？')) return;
+  await db.from('parent_child_links').delete().eq('id', linkId);
+  showToast('已移除連結');
+  loadAccLinkedChildren();
+  const { data: links } = await db
+    .from('parent_child_links')
+    .select('*, child:players!child_player_id(id, display_name, avatar_id)')
+    .eq('parent_id', currentUser.id);
+  linkedChildren = links || [];
+  const parentBtn = document.getElementById('parent-mode-btn');
+  if(parentBtn) parentBtn.style.display = linkedChildren.length > 0 ? 'block' : 'none';
 }
 
 async function linkChildAccount() {
