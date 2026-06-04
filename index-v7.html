@@ -4378,6 +4378,8 @@ async function loadParentOverview() {
     document.getElementById('parent-today-accuracy').textContent = '0%';
     document.getElementById('parent-total-stars').textContent = '0';
     document.getElementById('parent-login-streak').textContent = '0';
+    const overview = document.getElementById('parent-level-overview');
+    if(overview) overview.innerHTML = '<p style="color:#aaa;font-size:12px;grid-column:span 6;">孩子尚未開始遊戲</p>';
     return;
   }
 
@@ -4459,10 +4461,18 @@ async function loadParentAbility() {
 
   const { data: childRecord } = await db
     .from('children').select('id').eq('parent_id', childPlayerId).single();
-  if (!childRecord) return;
+
+  if (!childRecord) {
+    const barsEl = document.getElementById('parent-ability-bars');
+    if (barsEl) barsEl.innerHTML = '<p style="color:#aaa;font-size:13px;">孩子尚未開始遊戲</p>';
+    return;
+  }
 
   const { data: logs } = await db
     .from('answer_logs').select('level_id, is_correct').eq('child_id', childRecord.id);
+
+  const { data: levels } = await db
+    .from('level_progress').select('level_id, best_grade, best_score, play_count').eq('child_id', childRecord.id);
 
   const types = [
     { name: '加法', levels: [1,2,3,4], icon: '➕', color: '#4CAF50' },
@@ -4470,6 +4480,9 @@ async function loadParentAbility() {
     { name: '乘法', levels: [9,10,11,12,13], icon: '✖️', color: '#ff9800' },
     { name: '除法', levels: [14,15,16,17,18], icon: '➗', color: '#e91e63' }
   ];
+
+  const levelMap = {};
+  (levels || []).forEach(l => { levelMap[l.level_id] = l; });
 
   const barsEl = document.getElementById('parent-ability-bars');
   const weakEl = document.getElementById('parent-weakness');
@@ -4479,14 +4492,28 @@ async function loadParentAbility() {
   let abilityData = [];
   const barsHtml = types.map(type => {
     const typeLogs = (logs || []).filter(l => type.levels.includes(l.level_id));
-    const total = typeLogs.length;
-    const correct = typeLogs.filter(l => l.is_correct).length;
-    const rate = total > 0 ? Math.round(correct / total * 100) : 0;
+    const typeLevels = type.levels.map(id => levelMap[id]).filter(Boolean);
+
+    let rate = 0;
+    let total = typeLogs.length;
+    let correct = typeLogs.filter(l => l.is_correct).length;
+
+    if (total === 0 && typeLevels.length > 0) {
+      const gradeScore = { 'S': 100, 'A': 85, 'B': 70, 'C': 55, '': 0 };
+      const avgGrade = typeLevels.reduce((sum, l) =>
+        sum + (gradeScore[l.best_grade] || 0), 0) / typeLevels.length;
+      rate = Math.round(avgGrade);
+      total = typeLevels.length;
+      correct = typeLevels.filter(l => l.best_grade === 'S' || l.best_grade === 'A').length;
+    } else {
+      rate = total > 0 ? Math.round(correct / total * 100) : 0;
+    }
+
     abilityData.push({ ...type, rate, total, correct });
     return `<div class="ability-bar-wrap">
       <div class="ability-bar-label">
         <span>${type.icon} ${type.name}</span>
-        <span style="color:${type.color}">${rate}% （${correct}/${total} 題）</span>
+        <span style="color:${type.color}">${rate}%</span>
       </div>
       <div class="ability-bar-bg">
         <div class="ability-bar-fill" style="width:${rate}%;background:${type.color};"></div>
@@ -4496,32 +4523,31 @@ async function loadParentAbility() {
 
   if (barsEl) barsEl.innerHTML = barsHtml;
 
-  const weak = abilityData.filter(d => d.rate < 60 && d.total > 0).sort((a, b) => a.rate - b.rate);
-  const strong = abilityData.filter(d => d.rate >= 80 && d.total > 0).sort((a, b) => b.rate - a.rate);
+  const weak = abilityData.filter(d => d.rate < 70).sort((a, b) => a.rate - b.rate);
+  const strong = abilityData.filter(d => d.rate >= 85).sort((a, b) => b.rate - a.rate);
 
   if (weakEl) {
     weakEl.innerHTML = weak.length > 0
       ? weak.map(d => `<div style="background:rgba(244,67,54,0.1);border:1px solid rgba(244,67,54,0.3);border-radius:8px;padding:10px;margin-bottom:8px;">
-          <div style="color:#f44336;font-weight:bold;">${d.icon} ${d.name}能力需要加強</div>
+          <div style="color:#f44336;font-weight:bold;">${d.icon} ${d.name}需要加強</div>
           <div style="color:#aaa;font-size:13px;">正確率 ${d.rate}%，建議多練習相關關卡</div>
         </div>`).join('')
-      : '<p style="color:#aaa;font-size:13px;">目前沒有明顯弱點，繼續保持！</p>';
+      : '<p style="color:#4CAF50;font-size:13px;">✅ 目前沒有明顯弱點，繼續保持！</p>';
   }
 
   if (strongEl) {
     strongEl.innerHTML = strong.length > 0
       ? strong.map(d => `<div style="background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);border-radius:8px;padding:10px;margin-bottom:8px;">
-          <div style="color:#4CAF50;font-weight:bold;">${d.icon} ${d.name}能力表現優秀！</div>
-          <div style="color:#aaa;font-size:13px;">正確率 ${d.rate}%，孩子在這方面很強</div>
+          <div style="color:#4CAF50;font-weight:bold;">${d.icon} ${d.name}表現優秀！</div>
+          <div style="color:#aaa;font-size:13px;">正確率 ${d.rate}%</div>
         </div>`).join('')
       : '<p style="color:#aaa;font-size:13px;">還需要更多練習才能看出優勢</p>';
   }
 
   if (suggestEl) {
     const suggestions = [];
-    if (abilityData.find(d => d.name === '加法') && abilityData.find(d => d.name === '加法').total === 0) suggestions.push('🎯 建議從加法關卡（第1-4關）開始練習');
-    weak.forEach(d => suggestions.push(`📚 ${d.name}需要加強，建議每天練習10分鐘`));
-    if (abilityData.every(d => d.rate >= 80)) suggestions.push('🏆 各項能力都很優秀！可以嘗試挑戰更高難度');
+    weak.forEach(d => suggestions.push(`📚 建議加強${d.name}練習，每天10分鐘`));
+    if (strong.length === 4) suggestions.push('🏆 四種運算都很優秀！可以嘗試對戰模式');
     if (suggestions.length === 0) suggestions.push('📖 持續練習，保持穩定進步！');
     suggestEl.innerHTML = suggestions.map(s =>
       `<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);color:#fff;font-size:14px;">${s}</div>`
@@ -4849,7 +4875,7 @@ async function checkParentMessages() {
       <div style="font-size:36px;margin-bottom:8px;">💌</div>
       <div style="color:#f8d000;font-size:14px;margin-bottom:12px;">${msg.parent ? msg.parent.display_name : '家長'} 給你的留言</div>
       <div style="color:#fff;font-size:16px;line-height:1.6;margin-bottom:20px;background:rgba(255,215,0,0.08);border-radius:10px;padding:14px;">${msg.message}</div>
-      <button onclick="this.closest('div[style*=fixed]').remove()"
+      <button onclick="this.closest('[style*=fixed]').remove()"
         style="background:linear-gradient(135deg,#f5a623,#f8d000);color:#1a1a2e;border:none;border-radius:10px;padding:12px 32px;font-size:15px;font-weight:bold;cursor:pointer;">
         謝謝！繼續加油 💪
       </button>
