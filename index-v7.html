@@ -1704,6 +1704,43 @@ async function syncFromLocal() {
   }, { onConflict: 'child_id' });
 }
 
+async function forceFullSync() {
+  if(!currentUser || !currentChild) return;
+  console.log('開始完整同步...');
+
+  for(let i = 1; i <= 18; i++) {
+    const raw = localStorage.getItem('mc_lv_' + i);
+    if(!raw) continue;
+    try {
+      const d = JSON.parse(raw);
+      if(!d.grade && !d.score) continue;
+      await db.from('level_progress').upsert({
+        child_id: currentChild.id,
+        level_id: i,
+        best_score: d.score || 0,
+        best_grade: d.grade || '',
+        has_treasure: d.treasure || false,
+        star_fragments: 0,
+        play_count: 1
+      }, { onConflict: 'child_id,level_id' });
+    } catch(e) {
+      console.error('同步第' + i + '關失敗', e);
+    }
+  }
+
+  const stars = parseInt(localStorage.getItem('mc_stars') || '0');
+  try {
+    await db.from('child_stats').upsert({
+      child_id: currentChild.id,
+      total_fragments: stars
+    }, { onConflict: 'child_id' });
+  } catch(e) {
+    console.error('同步星星失敗', e);
+  }
+
+  console.log('完整同步完成');
+}
+
 async function syncFromCloud() {
   if (!currentChild) return;
 
@@ -1734,16 +1771,32 @@ async function syncFromCloud() {
   updateUserDisplay();
 }
 
+async function logAnswer(levelId, question, answer, isCorrect, timeSpent) {
+  if(!currentUser || !currentChild) return;
+  try {
+    await db.from('answer_logs').insert({
+      child_id: currentChild.id,
+      level_id: parseInt(levelId),
+      question: String(question),
+      answer: String(answer),
+      is_correct: isCorrect,
+      time_spent: timeSpent || 0
+    });
+  } catch(e) {
+    console.error('記錄答題失敗', e);
+  }
+}
+
 async function saveProgressToCloud(level, score, grade, treasure) {
   if (!currentChild) return;
   try {
     await db.from('level_progress').upsert({
       child_id: currentChild.id,
       level_id: level,
-      best_score: score,
-      best_grade: grade,
-      has_treasure: treasure,
-      star_fragments: score
+      best_score: score || 0,
+      best_grade: grade || '',
+      has_treasure: treasure || false,
+      updated_at: new Date().toISOString()
     }, { onConflict: 'child_id,level_id' });
 
     const stars = parseInt(localStorage.getItem('mc_stars') || '0');
@@ -1751,7 +1804,9 @@ async function saveProgressToCloud(level, score, grade, treasure) {
       child_id: currentChild.id,
       total_fragments: stars
     }, { onConflict: 'child_id' });
-  } catch(e) {}
+  } catch(e) {
+    console.error('雲端儲存失敗', e);
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -2309,6 +2364,7 @@ function submit(){
     GS.score+=pts;
     GS.starsEarned++;
     GS.totalCorrect++;
+    logAnswer(curId, q.text, num, true, Math.round(secs*1000));
     updateDailyTask('correct', 1);
     GS.monHp--;
     clearInterval(GS.qTimerId);
@@ -2325,6 +2381,7 @@ function submit(){
     GS.wrongTotal++;
     GS.score=Math.max(GS.score-50,-999);
     GS.heroHp--;
+    logAnswer(curId, q.text, num, false, Math.round(secs*1000));
     updateHUD();
     clearInterval(GS.qTimerId);
     if(GS.heroHp<=0){
@@ -4268,6 +4325,8 @@ window.addEventListener('DOMContentLoaded',()=>{
 // ═══════════════════════════════════════════════
 
 async function afterLogin() {
+  await forceFullSync();
+
   const { data: links } = await db
     .from('parent_child_links')
     .select('*, child:players!child_player_id(id, display_name, avatar_id)')
