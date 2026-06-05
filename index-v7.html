@@ -650,24 +650,66 @@ select option{background:#1a1a3e;color:#fff}
 <!-- ── S1: Title ── -->
 <div id="s-title" class="screen">
   <div class="top-bar-placeholder"></div>
-  <div class="title-content" style="flex:1">
-    <div>
-      <div class="logo-main">星界召喚師</div>
-      <div class="logo-sub">數學奇航</div>
+
+  <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:60px 20px 40px;">
+
+    <!-- Logo 區 -->
+    <div style="text-align:center;margin-bottom:32px;">
+      <h1 style="font-size:clamp(32px,8vw,52px);font-weight:900;margin:0;background:linear-gradient(135deg,#f8d000,#ff6b35,#e91e8c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:2px;">星界召喚師</h1>
+      <p style="color:#aaa;font-size:14px;margin:6px 0 0;letter-spacing:4px;">數 學 奇 航</p>
     </div>
-    <div id="titleHeroWrap"></div>
-    <button class="btn-start" onclick="unlockAudio();goTo('s-planet')">開始冒險</button>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
-      <button class="btn-sec" onclick="goTo('s-leaderboard')">星際排行榜</button>
-      <button class="btn-sec" onclick="goTo('s-friends')">好友</button>
-      <button class="btn-sec" onclick="goTo('s-tasks')">每日任務</button>
-      <button class="btn-sec" onclick="openAccountScreen()">帳號設定</button>
-      <button class="menu-btn" onclick="loadShop()">🏪 星際商店</button>
-      <button id="admin-btn" onclick="openAdmin()" style="display:none;background:rgba(150,50,50,0.6);" class="menu-btn">⚙️ 管理後台</button>
-      <button id="parent-mode-btn" onclick="enterParentMode()" style="display:none;background:linear-gradient(135deg,#667eea,#764ba2);" class="menu-btn">👨‍👩‍👧 家長模式</button>
-      <button id="parent-mail-btn" onclick="openParentMail()" style="display:none;background:linear-gradient(135deg,#e91e63,#c2185b);" class="menu-btn">💌 家長留言</button>
+
+    <!-- 英雄展示 -->
+    <div id="titleHeroWrap" style="margin-bottom:28px;filter:drop-shadow(0 0 20px rgba(255,215,0,0.3));"></div>
+
+    <!-- 主要按鈕：開始冒險 -->
+    <button onclick="unlockAudio();goTo('s-planet')"
+      style="background:linear-gradient(135deg,#f5a623,#f8d000);color:#1a1a2e;border:none;border-radius:16px;padding:18px 56px;font-size:20px;font-weight:900;cursor:pointer;margin-bottom:24px;box-shadow:0 4px 20px rgba(248,208,0,0.4);letter-spacing:1px;width:min(280px,80vw);">
+      ⚔️ 開始冒險
+    </button>
+
+    <!-- 功能按鈕群組 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;width:min(280px,80vw);margin-bottom:16px;">
+      <button onclick="goTo('s-friends')"
+        style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:12px;color:#fff;padding:14px 8px;font-size:14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <span style="font-size:22px;">👥</span>好友
+      </button>
+      <button onclick="goTo('s-tasks')"
+        style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:12px;color:#fff;padding:14px 8px;font-size:14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <span style="font-size:22px;">📋</span>每日任務
+      </button>
+      <button onclick="loadShop()"
+        style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:12px;color:#fff;padding:14px 8px;font-size:14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <span style="font-size:22px;">🏪</span>星際商店
+      </button>
+      <button onclick="openAccountScreen()"
+        style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:12px;color:#fff;padding:14px 8px;font-size:14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <span style="font-size:22px;">⚙️</span>帳號設定
+      </button>
     </div>
-    <div class="title-tagline">用數學之力召喚守護神！</div>
+
+    <!-- 次要按鈕：排行榜 -->
+    <button onclick="goTo('s-leaderboard')"
+      style="background:none;border:none;color:#aaa;font-size:13px;cursor:pointer;padding:8px;">
+      🏆 星際排行榜
+    </button>
+
+    <!-- 家長留言按鈕（有留言才顯示） -->
+    <button id="parent-mail-btn" onclick="openParentMail()" style="display:none;background:linear-gradient(135deg,rgba(233,30,99,0.3),rgba(156,39,176,0.3));border:1px solid rgba(233,30,99,0.5);border-radius:12px;color:#fff;padding:10px 20px;font-size:14px;cursor:pointer;margin-top:8px;">
+      💌 家長留言
+    </button>
+
+    <!-- 管理後台（管理員才顯示） -->
+    <button id="admin-btn" onclick="openAdmin()" style="display:none;background:rgba(150,50,50,0.4);border:1px solid rgba(200,50,50,0.4);border-radius:10px;color:#ff8080;padding:8px 16px;font-size:12px;cursor:pointer;margin-top:8px;">
+      ⚙️ 管理後台
+    </button>
+
+    <!-- 家長模式按鈕（有連結孩子才顯示） -->
+    <button id="parent-mode-btn" onclick="enterParentMode()" style="display:none;background:rgba(103,126,234,0.2);border:1px solid rgba(103,126,234,0.4);border-radius:10px;color:#a0b4f0;padding:8px 16px;font-size:12px;cursor:pointer;margin-top:8px;">
+      👨‍👩‍👧 切換家長模式
+    </button>
+
+    <p style="color:rgba(255,255,255,0.2);font-size:11px;margin-top:20px;">用數學之力召喚守護神！</p>
   </div>
 </div>
 
@@ -936,11 +978,42 @@ select option{background:#1a1a3e;color:#fff}
 <!-- ── S-Parent: Parent Dashboard ── -->
 <div id="s-parent" class="screen">
   <div class="top-bar-placeholder"></div>
-  <div style="max-width:520px;margin:0 auto;padding:12px 16px 80px;overflow-y:auto;height:100%;">
 
-    <div style="text-align:center;margin-bottom:16px;">
-      <h2 style="color:#f8d000;font-size:22px;margin:0;">👨‍👩‍👧 家長儀表板</h2>
+  <!-- 家長快速摘要（總覽 tab 的精簡版，永遠顯示） -->
+  <div id="parent-quick-summary" style="background:linear-gradient(180deg,rgba(103,126,234,0.15),transparent);border-bottom:1px solid rgba(255,255,255,0.08);padding:16px 20px 12px;">
+    <div style="max-width:520px;margin:0 auto;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span id="parent-child-avatar-quick" style="font-size:28px;">⚔️</span>
+          <div>
+            <div id="parent-child-name-quick" style="color:#f8d000;font-size:16px;font-weight:bold;">載入中...</div>
+            <div style="color:#aaa;font-size:12px;">學習進度</div>
+          </div>
+        </div>
+        <button onclick="switchMode()"
+          style="background:linear-gradient(135deg,#f5a623,#f8d000);color:#1a1a2e;border:none;border-radius:10px;padding:8px 16px;font-size:13px;font-weight:bold;cursor:pointer;">
+          🎮 遊戲模式
+        </button>
+      </div>
+      <!-- 今日學習快速數據 -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+        <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px;text-align:center;">
+          <div id="quick-today-q" style="color:#f8d000;font-size:20px;font-weight:bold;">-</div>
+          <div style="color:#aaa;font-size:11px;">今日答題</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px;text-align:center;">
+          <div id="quick-accuracy" style="color:#4CAF50;font-size:20px;font-weight:bold;">-</div>
+          <div style="color:#aaa;font-size:11px;">正確率</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px;text-align:center;">
+          <div id="quick-stars" style="color:#f8d000;font-size:20px;font-weight:bold;">-</div>
+          <div style="color:#aaa;font-size:11px;">星星碎片</div>
+        </div>
+      </div>
     </div>
+  </div>
+
+  <div style="max-width:520px;margin:0 auto;padding:12px 16px 80px;overflow-y:auto;height:100%;">
 
     <div id="parent-child-selector" style="margin-bottom:16px;display:none;">
       <select id="parent-child-select" onchange="switchViewingChild(this.value)"
@@ -949,11 +1022,11 @@ select option{background:#1a1a3e;color:#fff}
     </div>
 
     <div class="acc-tab-bar" style="margin-bottom:16px;">
-      <button class="acc-tab active" id="parent-tab-0" onclick="switchParentTab(0)">總覽</button>
-      <button class="acc-tab" id="parent-tab-1" onclick="switchParentTab(1)">能力分析</button>
-      <button class="acc-tab" id="parent-tab-2" onclick="switchParentTab(2)">學習報告</button>
-      <button class="acc-tab" id="parent-tab-3" onclick="switchParentTab(3)">留言鼓勵</button>
-      <button class="acc-tab" id="parent-tab-4" onclick="switchParentTab(4)">連結孩子</button>
+      <button class="acc-tab active" id="parent-tab-0" onclick="switchParentTab(0)">📊 總覽</button>
+      <button class="acc-tab" id="parent-tab-1" onclick="switchParentTab(1)">🧠 能力</button>
+      <button class="acc-tab" id="parent-tab-2" onclick="switchParentTab(2)">📋 報告</button>
+      <button class="acc-tab" id="parent-tab-3" onclick="switchParentTab(3)">💌 留言</button>
+      <button class="acc-tab" id="parent-tab-4" onclick="switchParentTab(4)">🔗 連結</button>
     </div>
 
     <!-- Tab 0：總覽 -->
@@ -4444,11 +4517,61 @@ function switchParentTab(idx) {
   if (idx === 2) loadParentReport();
   if (idx === 3) loadParentMessages();
   if (idx === 4) loadParentLinkedChildren();
+  loadParentQuickSummary();
 }
 
 async function loadParentDashboard() {
   if (!currentViewingChild) return;
   switchParentTab(0);
+  loadParentQuickSummary();
+}
+
+async function loadParentQuickSummary() {
+  if (!currentViewingChild) return;
+  const childPlayerId = currentViewingChild.child_player_id;
+
+  const childName = currentViewingChild.nickname ||
+    (currentViewingChild.child && currentViewingChild.child.display_name) || '孩子';
+  const childAvatar = getAvatar(currentViewingChild.child ? currentViewingChild.child.avatar_id : null);
+  const avatarEl = document.getElementById('parent-child-avatar-quick');
+  const nameEl = document.getElementById('parent-child-name-quick');
+  if (avatarEl) avatarEl.textContent = childAvatar;
+  if (nameEl) nameEl.textContent = childName + ' 的學習狀況';
+
+  const { data: childRecord } = await db
+    .from('children').select('id').eq('parent_id', childPlayerId).single();
+
+  if (!childRecord) {
+    const qEl = document.getElementById('quick-today-q');
+    const aEl = document.getElementById('quick-accuracy');
+    const sEl = document.getElementById('quick-stars');
+    if (qEl) qEl.textContent = '0';
+    if (aEl) aEl.textContent = '0%';
+    if (sEl) sEl.textContent = '0';
+    return;
+  }
+
+  const today = getTodayTW();
+  const { data: todayLogs } = await db
+    .from('answer_logs')
+    .select('is_correct')
+    .eq('child_id', childRecord.id)
+    .gte('created_at', today + 'T00:00:00+08:00');
+
+  const total = (todayLogs || []).length;
+  const correct = (todayLogs || []).filter(l => l.is_correct).length;
+  const accuracy = total > 0 ? Math.round(correct / total * 100) : 0;
+
+  const qEl = document.getElementById('quick-today-q');
+  const aEl = document.getElementById('quick-accuracy');
+  if (qEl) qEl.textContent = total;
+  if (aEl) aEl.textContent = accuracy + '%';
+
+  const { data: stats } = await db
+    .from('child_stats').select('total_fragments')
+    .eq('child_id', childRecord.id).single();
+  const sEl = document.getElementById('quick-stars');
+  if (sEl) sEl.textContent = (stats && stats.total_fragments) || 0;
 }
 
 async function loadParentOverview() {
