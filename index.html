@@ -2364,6 +2364,18 @@ function startLevel(id){
     initFire();
     startLvTimer();
     nextQ();
+    setTimeout(() => {
+      let dbg = document.getElementById('debug-overlay');
+      if (!dbg) {
+        dbg = document.createElement('div');
+        dbg.id = 'debug-overlay';
+        dbg.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:white;font-size:11px;padding:4px 8px;z-index:99999;text-align:left;pointer-events:none;';
+        document.body.appendChild(dbg);
+      }
+      const game = document.getElementById('s-game');
+      const gs = getComputedStyle(game);
+      dbg.textContent = 'vh=' + window.innerHeight + ' dvh=' + window.visualViewport?.height + ' game-h=' + game.offsetHeight + ' padT=' + gs.paddingTop + ' padB=' + gs.paddingBottom + ' scrollH=' + game.scrollHeight;
+    }, 500);
   });
 }
 
