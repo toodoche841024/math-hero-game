@@ -14,6 +14,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 /* ── Screens ── */
 .screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;overflow:hidden}
 .screen.active{display:flex}
+/* ── ensure top-bar-placeholder always reserves 44px ── */
+.top-bar-placeholder{width:100%;height:44px;flex-shrink:0}
 
 /* ── Title ── */
 #s-title{background:radial-gradient(ellipse at 50% 30%,#0d0d2e 0%,#000010 100%)}
@@ -75,13 +77,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 .op-count{font-size:11px;color:#aa7744;margin-top:5px}
 
 /* ── Level Select ── */
-#s-levels{background:linear-gradient(180deg,#1a0505,#3d0000,#140000);overflow-y:auto}
+#s-levels{background:linear-gradient(180deg,#1a0505,#3d0000,#140000)}
 .lvl-header{display:flex;align-items:center;padding:12px 14px;
   background:rgba(26,5,5,0.96);position:sticky;top:0;z-index:10;width:100%;gap:10px;
   border-bottom:1px solid rgba(255,100,0,0.25)}
 .lvl-header h2{font-family:'Orbitron',sans-serif;font-size:17px;color:#ff9944}
 .lvl-back-btn{background:none;border:none;color:#ff9944;font-size:22px;cursor:pointer;padding:4px}
-.levels-list{width:100%;max-width:440px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.levels-list{width:100%;max-width:440px;padding:12px;display:flex;flex-direction:column;gap:10px;flex:1;overflow-y:auto}
 .level-card{background:rgba(0,0,0,0.5);border:2px solid rgba(255,100,0,0.28);
   border-radius:12px;padding:14px;cursor:pointer;transition:all 0.25s;display:flex;align-items:center;gap:12px}
 .level-card:hover:not(.locked){border-color:#ff7700;transform:translateX(4px)}
@@ -358,7 +360,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 .celeb-continue.visible{opacity:1}
 
 /* ── Collection ── */
-#s-collection{background:radial-gradient(ellipse at 50% 30%,#080020,#000010);overflow-y:auto}
+#s-collection{background:radial-gradient(ellipse at 50% 30%,#080020,#000010)}
 .coll-header{display:flex;align-items:center;padding:12px 14px;
   background:rgba(8,0,32,0.96);position:sticky;top:0;z-index:10;width:100%;
   gap:10px;border-bottom:1px solid rgba(255,215,0,0.2)}
@@ -522,7 +524,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;
 @keyframes slideDown{from{opacity:0;transform:translateX(-50%) translateY(-20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 
 /* ── Top Bar ── */
-.top-bar-placeholder{width:100%;flex-shrink:0}
 .top-bar{position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:rgba(10,10,46,0.92);backdrop-filter:blur(8px);z-index:500;height:44px;box-sizing:border-box;width:100%}
 .top-bar-left{display:flex;align-items:center}
 .top-bar-right{display:flex;align-items:center;gap:8px}
@@ -651,7 +652,7 @@ select option{background:#1a1a3e;color:#fff}
 <div id="s-title" class="screen">
   <div class="top-bar-placeholder"></div>
 
-  <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:60px 20px 40px;">
+  <div style="position:relative;z-index:1;flex:1;min-height:0;overflow-y:auto;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 20px 32px;">
 
     <!-- Logo 區 -->
     <div style="text-align:center;margin-bottom:32px;">
@@ -717,17 +718,19 @@ select option{background:#1a1a3e;color:#fff}
 <div id="s-planet" class="screen">
   <div class="top-bar-placeholder"></div>
   <button class="back-btn" onclick="goTo('s-title')">← 返回</button>
-  <div class="screen-big-title">選擇星球</div>
-  <div class="planets-grid">
-    <div class="planet-card planet-burning" onclick="goTo('s-world')">
-      <div class="planet-orb">🔥</div>
-      <div class="planet-name">燃燒星</div>
-      <div class="planet-sub">四則運算挑戰</div>
-    </div>
-    <div class="planet-card planet-locked">
-      <div class="planet-orb" style="font-size:38px;color:#333">?</div>
-      <div class="planet-name" style="color:#444">???</div>
-      <div class="planet-sub">🔒 未解鎖</div>
+  <div style="flex:1;overflow-y:auto;width:100%;display:flex;flex-direction:column;align-items:center;">
+    <div class="screen-big-title">選擇星球</div>
+    <div class="planets-grid">
+      <div class="planet-card planet-burning" onclick="goTo('s-world')">
+        <div class="planet-orb">🔥</div>
+        <div class="planet-name">燃燒星</div>
+        <div class="planet-sub">四則運算挑戰</div>
+      </div>
+      <div class="planet-card planet-locked">
+        <div class="planet-orb" style="font-size:38px;color:#333">?</div>
+        <div class="planet-name" style="color:#444">???</div>
+        <div class="planet-sub">🔒 未解鎖</div>
+      </div>
     </div>
   </div>
 </div>
@@ -736,8 +739,10 @@ select option{background:#1a1a3e;color:#fff}
 <div id="s-world" class="screen">
   <div class="top-bar-placeholder"></div>
   <button class="back-btn" onclick="goTo('s-planet')">← 返回</button>
-  <div class="screen-big-title">燃燒星</div>
-  <div class="ops-grid" id="opsGrid"></div>
+  <div style="flex:1;overflow-y:auto;width:100%;display:flex;flex-direction:column;align-items:center;">
+    <div class="screen-big-title">燃燒星</div>
+    <div class="ops-grid" id="opsGrid"></div>
+  </div>
 </div>
 
 <!-- ── S4: Level Select ── -->
@@ -880,7 +885,7 @@ select option{background:#1a1a3e;color:#fff}
 <!-- ── S8: Lose ── -->
 <div id="s-lose" class="screen">
   <div class="top-bar-placeholder"></div>
-  <div style="flex:1;display:flex;align-items:center;justify-content:center;width:100%">
+  <div style="flex:1;overflow-y:auto;display:flex;align-items:center;justify-content:center;width:100%">
   <div class="lose-box">
     <div class="lose-title">💀 挑戰失敗</div>
     <div class="lose-msg" id="loseMsg"></div>
@@ -901,8 +906,10 @@ select option{background:#1a1a3e;color:#fff}
     <button class="coll-back" onclick="goTo('s-world')">←</button>
     <h2>我的收藏</h2>
   </div>
-  <div class="stars-total-row" id="starsTotalRow"></div>
-  <div class="treasures-grid" id="treasuresGrid"></div>
+  <div style="flex:1;overflow-y:auto;width:100%;display:flex;flex-direction:column;align-items:center;">
+    <div class="stars-total-row" id="starsTotalRow"></div>
+    <div class="treasures-grid" id="treasuresGrid"></div>
+  </div>
 </div>
 
 <!-- ── S-Shop ── -->
@@ -980,7 +987,7 @@ select option{background:#1a1a3e;color:#fff}
   <div class="top-bar-placeholder"></div>
 
   <!-- 家長快速摘要（總覽 tab 的精簡版，永遠顯示） -->
-  <div id="parent-quick-summary" style="background:linear-gradient(180deg,rgba(103,126,234,0.15),transparent);border-bottom:1px solid rgba(255,255,255,0.08);padding:16px 20px 12px;">
+  <div id="parent-quick-summary" style="background:linear-gradient(180deg,rgba(103,126,234,0.15),transparent);border-bottom:1px solid rgba(255,255,255,0.08);padding:16px 20px 12px;width:100%;flex-shrink:0;">
     <div style="max-width:520px;margin:0 auto;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <div style="display:flex;align-items:center;gap:10px;">
@@ -1013,7 +1020,7 @@ select option{background:#1a1a3e;color:#fff}
     </div>
   </div>
 
-  <div style="max-width:520px;margin:0 auto;padding:12px 16px 80px;overflow-y:auto;height:100%;">
+  <div style="max-width:520px;margin:0 auto;padding:12px 16px 80px;overflow-y:auto;flex:1;min-height:0;width:100%;">
 
     <div id="parent-child-selector" style="margin-bottom:16px;display:none;">
       <select id="parent-child-select" onchange="switchViewingChild(this.value)"
@@ -1159,7 +1166,7 @@ select option{background:#1a1a3e;color:#fff}
 <!-- ── S-Mailbox: Parent Messages ── -->
 <div id="s-mailbox" class="screen">
   <div class="top-bar-placeholder"></div>
-  <div style="max-width:480px;margin:0 auto;padding:12px 16px 80px;">
+  <div style="max-width:480px;margin:0 auto;padding:12px 16px 40px;flex:1;overflow-y:auto;width:100%;">
     <div style="text-align:center;margin-bottom:20px;">
       <h2 style="color:#f8d000;font-size:22px;margin:0;">💌 家長留言</h2>
       <p style="color:#aaa;font-size:13px;margin:8px 0 0;">來自家長的鼓勵訊息</p>
@@ -1332,7 +1339,7 @@ select option{background:#1a1a3e;color:#fff}
 <!-- ── S14: Battle Waiting ── -->
 <div id="s-battle-waiting" class="screen">
   <div class="top-bar-placeholder"></div>
-  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:calc(100vh - 44px);gap:24px;padding:20px">
+  <div style="flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:20px">
     <div style="font-size:64px">⏳</div>
     <p id="battle-waiting-msg" style="color:#f8d000;font-size:20px;text-align:center"></p>
     <button onclick="goTo('s-title')" style="background:rgba(255,255,255,0.1);color:#fff;border:none;border-radius:10px;padding:12px 28px;cursor:pointer;font-size:16px">取消</button>
@@ -1394,7 +1401,7 @@ select option{background:#1a1a3e;color:#fff}
 <!-- ── S16: Battle Result ── -->
 <div id="s-battle-result" class="screen">
   <div class="top-bar-placeholder"></div>
-  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:calc(100vh - 44px);gap:20px;padding:20px">
+  <div style="flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:20px">
     <h2 id="battle-result-title" style="color:#f8d000;font-size:42px;margin:0"></h2>
     <p id="battle-result-score" style="color:#fff;font-size:60px;font-weight:bold;margin:0"></p>
     <p style="color:#aaa;font-size:14px;margin:0">勝利+10⭐　平局+3⭐</p>
@@ -2948,7 +2955,10 @@ function checkLoginStreak() {
   const today = getTodayTW();
   const lastLogin = localStorage.getItem('last_login_date');
   let streak = parseInt(localStorage.getItem('login_streak') || '0');
-  if (lastLogin === today) return;
+  if (lastLogin === today) {
+    syncStreakToCloud(streak);
+    return;
+  }
   const yesterdayStr = getYesterdayTW();
   streak = (lastLogin === yesterdayStr) ? streak + 1 : 1;
   localStorage.setItem('login_streak', streak);
@@ -2956,6 +2966,17 @@ function checkLoginStreak() {
   const bonus = streak >= 7 ? 10 : streak >= 3 ? 5 : 1;
   addStarFragments(bonus);
   showToast(`第 ${streak} 天連續登入！獲得 ${bonus} 顆星星碎片`);
+  syncStreakToCloud(streak);
+}
+
+async function syncStreakToCloud(streak) {
+  if (!currentChild) return;
+  try {
+    await db.from('child_stats').upsert({
+      child_id: currentChild.id,
+      login_streak: streak
+    }, { onConflict: 'child_id' });
+  } catch(e) {}
 }
 
 // ═══════════════════════════════════════════════
@@ -4621,9 +4642,9 @@ async function loadParentOverview() {
   document.getElementById('parent-today-accuracy').textContent = todayAccuracy + '%';
 
   const { data: stats } = await db
-    .from('child_stats').select('total_fragments').eq('child_id', childRecord.id).single();
+    .from('child_stats').select('total_fragments, login_streak').eq('child_id', childRecord.id).single();
   document.getElementById('parent-total-stars').textContent = stats ? stats.total_fragments || 0 : 0;
-  document.getElementById('parent-login-streak').textContent = '-';
+  document.getElementById('parent-login-streak').textContent = (stats && stats.login_streak != null) ? stats.login_streak : '-';
 
   const { data: levels } = await db
     .from('level_progress').select('level_id, best_grade, has_treasure').eq('child_id', childRecord.id);
@@ -4657,7 +4678,8 @@ async function loadParentOverview() {
     .eq('child_id', childRecord.id)
     .gte('created_at', weekDays[0] + 'T00:00:00+08:00');
 
-  const weekCounts = weekDays.map(day => (weekLogs || []).filter(l => l.created_at.startsWith(day)).length);
+  const toTWDate = s => new Date(new Date(s).getTime() + 8 * 3600000).toISOString().split('T')[0];
+  const weekCounts = weekDays.map(day => (weekLogs || []).filter(l => toTWDate(l.created_at) === day).length);
   const maxCount = Math.max(...weekCounts, 1);
   const chart = document.getElementById('parent-weekly-chart');
   const labelsEl = document.getElementById('parent-chart-labels');
@@ -4687,8 +4709,15 @@ async function loadParentAbility() {
     .from('children').select('id').eq('parent_id', childPlayerId).single();
 
   if (!childRecord) {
+    const noData = '<p style="color:#aaa;font-size:13px;">孩子尚未開始遊戲</p>';
     const barsEl = document.getElementById('parent-ability-bars');
-    if (barsEl) barsEl.innerHTML = '<p style="color:#aaa;font-size:13px;">孩子尚未開始遊戲</p>';
+    const weakEl = document.getElementById('parent-weakness');
+    const strongEl = document.getElementById('parent-strength');
+    const suggestEl = document.getElementById('parent-suggestions');
+    if (barsEl) barsEl.innerHTML = noData;
+    if (weakEl) weakEl.innerHTML = noData;
+    if (strongEl) strongEl.innerHTML = noData;
+    if (suggestEl) suggestEl.innerHTML = '';
     return;
   }
 
@@ -4811,7 +4840,7 @@ async function loadParentReport() {
   }
 
   const { data: recentLogs } = await db
-    .from('answer_logs').select('*').eq('child_id', childRecord.id)
+    .from('answer_logs').select('question, answer, level_id, is_correct, created_at').eq('child_id', childRecord.id)
     .order('created_at', { ascending: false }).limit(20);
 
   const recentEl = document.getElementById('parent-recent-answers');
@@ -4926,7 +4955,8 @@ async function linkChildFromAccount() {
   resultEl.style.color = '#aaa';
   resultEl.textContent = '搜尋中...';
 
-  const { data: players } = await db.from('players').select('id, display_name, avatar_id');
+  const prefix = input.toLowerCase();
+  const { data: players } = await db.from('players').select('id, display_name, avatar_id').ilike('id', prefix + '%').limit(10);
   const matched = (players||[]).find(p =>
     p.id.replace(/-/g,'').substring(0,8).toUpperCase() === input
   );
@@ -5032,7 +5062,8 @@ async function linkChildAccount() {
   resultEl.textContent = '搜尋中...';
   resultEl.style.color = '#aaa';
 
-  const { data: players } = await db.from('players').select('id, display_name, avatar_id');
+  const prefix2 = input.toLowerCase();
+  const { data: players } = await db.from('players').select('id, display_name, avatar_id').ilike('id', prefix2 + '%').limit(10);
   const matched = (players || []).find(p =>
     p.id.replace(/-/g, '').substring(0, 8).toUpperCase() === input
   );
