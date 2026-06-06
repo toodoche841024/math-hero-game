@@ -160,7 +160,7 @@ body{width:100%;height:100%;min-height:-webkit-fill-available;overflow:hidden;
   80%{transform:scale(0.95);opacity:1}100%{transform:scale(0.9);opacity:0.6}}
 
 /* ── Game Screen ── */
-#s-game{background:#000;flex-direction:column;height:100vh;height:100dvh;padding-top:8px;box-sizing:border-box;overflow:hidden}
+#s-game{background:#000;flex-direction:column;height:100vh;height:100dvh;padding-top:8px;padding-bottom:max(48px,env(safe-area-inset-bottom,48px));box-sizing:border-box;overflow:hidden}
 
 /* HUD */
 .hud{width:100%;background:rgba(0,0,0,0.85);border-bottom:1px solid rgba(255,107,0,0.3);
@@ -2314,7 +2314,7 @@ function genQ(id){
     // 關卡15：被除數20~99、除數2~9、整除（枚舉所有合法組合後隨機取一）
     case'15':{const p15=[];for(let _b=2;_b<=9;_b++)for(let _a=20;_a<=99;_a++)if(_a%_b===0)p15.push([_a,_b]);const c15=p15[Math.floor(Math.random()*p15.length)];a=c15[0];b=c15[1];ans=a/b;text=`${a} ÷ ${b} = ?`;}break;
     // 關卡16：非九九範圍 quotient=10~11
-    case'16':{b=r(2,9);let m=r(2,30);a=b*m;ans=a/b;text=`${a} ÷ ${b} = ?`;}break;
+    case'16':{let tries=0;do{b=r(2,9);let m=r(10,50);a=b*m;}while(a<=81&&tries++<50);ans=a/b;text=`${a} ÷ ${b} = ?`;}break;
     case'17':{b=r(11,19);let m=r(2,5);a=b*m;let tries=0;while((a<10||a>99)&&tries++<30){m=r(2,5);a=b*m;}ans=a/b;text=`${a} ÷ ${b} = ?`;}break;
     case'18':{b=r(2,9);let m=r(12,111);a=b*m;let tries=0;while((a<100||a>999)&&tries++<30){m=r(12,111);a=b*m;}ans=a/b;text=`${a} ÷ ${b} = ?`;}break;
     default: a=r(1,9);b=r(1,9);ans=a+b;text=`${a} ＋ ${b} = ?`;
@@ -2364,18 +2364,6 @@ function startLevel(id){
     initFire();
     startLvTimer();
     nextQ();
-    setTimeout(() => {
-      let dbg = document.getElementById('debug-overlay');
-      if (!dbg) {
-        dbg = document.createElement('div');
-        dbg.id = 'debug-overlay';
-        dbg.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:white;font-size:11px;padding:4px 8px;z-index:99999;text-align:left;pointer-events:none;';
-        document.body.appendChild(dbg);
-      }
-      const game = document.getElementById('s-game');
-      const gs = getComputedStyle(game);
-      dbg.textContent = 'vh=' + window.innerHeight + ' dvh=' + window.visualViewport?.height + ' game-h=' + game.offsetHeight + ' padT=' + gs.paddingTop + ' padB=' + gs.paddingBottom + ' scrollH=' + game.scrollHeight;
-    }, 500);
   });
 }
 
