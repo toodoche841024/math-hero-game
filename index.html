@@ -2880,10 +2880,10 @@ function setupGame(){
   const gender = localStorage.getItem('player_gender');
   const heroSrc = gender === 'girl' ? 'images/girl.jpg' : 'images/boy.jpg';
   const hs=document.getElementById('heroSprite');
-  hs.innerHTML=`<img src="${heroSrc}" style="width:80px;height:120px;object-fit:cover;border-radius:12px;display:block;transition:filter 0.4s ease;" onerror="this.style.display='none'">`;
+  hs.innerHTML=`<img src="${heroSrc}" style="width:100px;height:100px;object-fit:cover;border-radius:50%;display:block;transition:filter 0.4s ease;mix-blend-mode:multiply;background:transparent;" onerror="this.style.display='none'">`;
   hs.dataset.char='hero';
   const ms=document.getElementById('monSprite');
-  ms.innerHTML=`<img src="images/fog.jpg" style="width:80px;height:120px;object-fit:cover;border-radius:50%;opacity:0.85;display:block;">`;
+  ms.innerHTML=`<img src="images/fog.jpg" style="width:100px;height:100px;object-fit:cover;border-radius:50%;opacity:0.9;display:block;mix-blend-mode:multiply;background:transparent;">`;
   ms.dataset.char='fog';
   ms.style.transition='transform 0.3s ease';
   ms.style.transform=`scale(${monScale})`;
