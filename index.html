@@ -594,6 +594,8 @@ select option{background:#1a1a3e;color:#fff}
 .dialog-arrow.visible{opacity:1}
 @keyframes dlgBlink{0%,100%{opacity:0.2}50%{opacity:1}}
 @keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-80px) scale(1.5)}}
+.battle-stage{filter:grayscale(80%) brightness(0.6);transition:filter 0.8s ease}
 @media(max-width:500px){
   .dialog-box{padding:14px 12px 28px;gap:10px;min-height:120px}
   .dialog-avatar{width:48px;height:48px}
@@ -879,6 +881,17 @@ select option{background:#1a1a3e;color:#fff}
     <div class="fighter-wrap" id="monWrap">
       <div class="fighter-sprite" id="monSprite"></div>
       <div class="fighter-label" id="monLabel">-</div>
+    </div>
+  </div>
+
+  <!-- Restore Progress Bar -->
+  <div id="restore-bar-wrap" style="width:100%;padding:4px 16px;box-sizing:border-box;flex-shrink:0">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+      <span id="restore-label" style="color:#aaa;font-size:11px">🌍 星球恢復度</span>
+      <span id="restore-percent" style="color:#f8d000;font-size:11px">0%</span>
+    </div>
+    <div style="background:rgba(100,50,150,0.3);border-radius:10px;height:8px;overflow:hidden">
+      <div id="restore-fill" style="height:100%;width:0%;border-radius:10px;transition:width 0.5s ease,background 0.5s ease;background:linear-gradient(90deg,#6b3fa0,#9b59b6)"></div>
     </div>
   </div>
 
@@ -2401,6 +2414,137 @@ let curId=null;
 let GS={};
 
 // ═══════════════════════════════════════════════
+// VISUAL FEEDBACK SYSTEM
+// ═══════════════════════════════════════════════
+let correctCount = 0;
+let comboCount = 0;
+
+function getPlanetType(id) {
+  const n = parseInt(id);
+  if (n <= 8)  return 'burning';
+  if (n <= 16) return 'ocean';
+  if (n <= 24) return 'thunder';
+  if (n <= 32) return 'moon';
+  return 'hall';
+}
+
+const RESTORE_EMOJIS = {
+  burning: ['🔥','🌸'], ocean: ['🐠','🪸'],
+  thunder: ['⚡','🌿'], moon: ['🌙','✨'], hall: ['🌟','💫'],
+};
+const RESTORE_MSGS = ['又一朵花綻放了！','能量正在恢復！','太厲害了！','就是這樣！繼續加油！','星球正在甦醒！'];
+const WRONG_MSGS = ['沒關係，再試一次！','慢慢來，你可以的。','深呼吸，下一題等你！'];
+
+function updateWorldRestore() {
+  const bs = document.getElementById('battleStage');
+  if (!bs) return;
+  const c = correctCount;
+  let f;
+  if (c === 0)     f = 'grayscale(80%) brightness(0.6)';
+  else if (c <= 2) f = 'grayscale(60%) brightness(0.7)';
+  else if (c <= 4) f = 'grayscale(40%) brightness(0.8)';
+  else if (c <= 6) f = 'grayscale(20%) brightness(0.9)';
+  else             f = 'grayscale(0%) brightness(1.0)';
+  bs.style.filter = f;
+}
+
+function updateRestoreBar() {
+  const fill = document.getElementById('restore-fill');
+  const pct  = document.getElementById('restore-percent');
+  const label= document.getElementById('restore-label');
+  if (!fill) return;
+  const total = GS.totalQ || 10;
+  const p = Math.min(100, Math.round(correctCount / total * 100));
+  fill.style.width = p + '%';
+  if (pct) pct.textContent = p + '%';
+  if (p <= 30)      fill.style.background = 'linear-gradient(90deg,#6b3fa0,#9b59b6)';
+  else if (p <= 60) fill.style.background = 'linear-gradient(90deg,#1a8a6e,#2ecc71)';
+  else if (p <= 90) fill.style.background = 'linear-gradient(90deg,#e67e22,#f1c40f)';
+  else              fill.style.background = 'linear-gradient(90deg,#f1c40f,#f8d000)';
+  if (p >= 100 && label) label.textContent = '🌍 生機盎然！';
+}
+
+function resetRestoreBar() {
+  const fill = document.getElementById('restore-fill');
+  const pct  = document.getElementById('restore-percent');
+  const label= document.getElementById('restore-label');
+  if (fill)  { fill.style.width = '0%'; fill.style.background = 'linear-gradient(90deg,#6b3fa0,#9b59b6)'; }
+  if (pct)   pct.textContent = '0%';
+  if (label) label.textContent = '🌍 星球恢復度';
+}
+
+function showBattleMsg(text, color, duration) {
+  const bs = document.getElementById('battleStage');
+  if (!bs) return;
+  const el = document.createElement('div');
+  el.textContent = text;
+  el.style.cssText = `position:absolute;left:50%;bottom:10px;transform:translateX(-50%);color:${color};font-size:14px;font-family:'Noto Sans TC',sans-serif;z-index:50;pointer-events:none;white-space:nowrap;opacity:1;transition:opacity 0.4s;`;
+  bs.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 400); }, duration || 1100);
+}
+
+function showRestoreEffect() {
+  const bs = document.getElementById('battleStage');
+  if (!bs) return;
+  const emojis = RESTORE_EMOJIS[getPlanetType(curId)] || ['✨'];
+  const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+  const span = document.createElement('span');
+  span.textContent = emoji;
+  span.style.cssText = `position:absolute;font-size:28px;z-index:30;pointer-events:none;left:${15+Math.random()*60}%;bottom:35%;animation:floatUp 1.5s ease forwards;`;
+  bs.appendChild(span);
+  setTimeout(() => span.remove(), 1500);
+  showBattleMsg(RESTORE_MSGS[Math.floor(Math.random()*RESTORE_MSGS.length)], '#f8d000', 1100);
+}
+
+function showWrongMsg() {
+  showBattleMsg(WRONG_MSGS[Math.floor(Math.random()*WRONG_MSGS.length)], 'rgba(255,255,255,0.8)', 1100);
+}
+
+const COMBO_CFG = {
+  3:  { text: '🔥 三連擊！',                           color: '#ff9944', size: '24px' },
+  5:  { text: '🔥🔥 五連擊！迷霧正在退散！',           color: '#ffd700', size: '28px' },
+  7:  { text: '🔥🔥🔥 七連擊！！',                     color: '#ffd700', size: '32px' },
+  10: { text: '⭐ 十連擊！！！你就是傳說中的守護者！',  color: '#ffd700', size: '36px', blink: true },
+};
+
+function showComboPopup(combo) {
+  const cfg = COMBO_CFG[combo];
+  if (!cfg) return;
+  const bs = document.getElementById('battleStage');
+  if (!bs) return;
+  const el = document.createElement('div');
+  el.textContent = cfg.text;
+  el.style.cssText = `position:absolute;left:50%;top:28%;transform:translateX(-50%) scale(0);color:${cfg.color};font-size:${cfg.size};font-weight:900;font-family:'Noto Sans TC',sans-serif;z-index:60;pointer-events:none;white-space:nowrap;text-shadow:0 0 20px ${cfg.color};transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1),opacity 0.4s;`;
+  if (cfg.blink) el.style.animation = 'tFlash 0.5s ease-in-out infinite alternate';
+  bs.appendChild(el);
+  requestAnimationFrame(() => { el.style.transform = 'translateX(-50%) scale(1)'; });
+  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 400); }, 1500);
+}
+
+function showSpiritAwaken(spiritImg, spiritName) {
+  return new Promise(resolve => {
+    const div = document.createElement('div');
+    div.style.cssText = 'position:fixed;inset:0;z-index:9998;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;transition:opacity 0.4s;';
+    const flash = document.createElement('div');
+    flash.style.cssText = 'position:absolute;inset:0;background:#fff;opacity:0;transition:opacity 0.25s;pointer-events:none;';
+    div.appendChild(flash);
+    const img = document.createElement('img');
+    img.src = spiritImg;
+    img.style.cssText = 'width:160px;height:160px;border-radius:50%;object-fit:cover;transform:scale(0.3);opacity:0;transition:transform 1.5s cubic-bezier(0.34,1.56,0.64,1),opacity 1.2s ease,box-shadow 1s ease;position:relative;z-index:1;';
+    div.appendChild(img);
+    const nameEl = document.createElement('div');
+    nameEl.textContent = spiritName;
+    nameEl.style.cssText = 'color:#f8d000;font-size:20px;font-weight:900;opacity:0;transition:opacity 1s;position:relative;z-index:1;letter-spacing:3px;text-shadow:0 0 20px #ffd700;font-family:"Noto Sans TC",sans-serif;';
+    div.appendChild(nameEl);
+    document.body.appendChild(div);
+    requestAnimationFrame(() => { flash.style.opacity = '1'; setTimeout(() => { flash.style.opacity = '0'; }, 250); });
+    setTimeout(() => { div.style.background = '#3d1a00'; img.style.transform = 'scale(1)'; img.style.opacity = '1'; nameEl.style.opacity = '1'; }, 500);
+    setTimeout(() => { img.style.boxShadow = '0 0 60px rgba(255,215,0,0.6),0 0 120px rgba(255,150,0,0.3)'; }, 2000);
+    setTimeout(() => { div.style.opacity = '0'; setTimeout(() => { div.remove(); resolve(); }, 400); }, 3000);
+  });
+}
+
+// ═══════════════════════════════════════════════
 // OPENING STORY & GENDER SELECTION
 // ═══════════════════════════════════════════════
 const OPENING_LINES = [
@@ -2443,8 +2587,31 @@ function playOpening() {
     textEl.appendChild(p);
   }
 
+  let fogEl = null, novaEl = null;
+
+  function addFog() {
+    fogEl = document.createElement('img');
+    fogEl.src = 'images/fog.jpg';
+    fogEl.style.cssText = 'position:absolute;top:20px;right:20px;width:60px;height:60px;border-radius:50%;object-fit:cover;opacity:0;transform:translateX(80px);transition:transform 1s ease,opacity 1s ease;pointer-events:none;';
+    screen.appendChild(fogEl);
+    requestAnimationFrame(() => { fogEl.style.opacity = '0.6'; fogEl.style.transform = 'translateX(0)'; });
+  }
+
+  function addNova() {
+    novaEl = document.createElement('img');
+    novaEl.src = 'images/nova.jpg';
+    novaEl.style.cssText = 'position:absolute;top:15%;left:50%;margin-left:-40px;width:80px;height:80px;border-radius:50%;object-fit:cover;opacity:0;transform:translateY(-100px) rotate(360deg);transition:transform 1.2s cubic-bezier(0.34,1.56,0.64,1),opacity 1s ease;pointer-events:none;border:3px solid rgba(255,215,0,0.6);';
+    screen.appendChild(novaEl);
+    requestAnimationFrame(() => { novaEl.style.opacity = '1'; novaEl.style.transform = 'translateY(0) rotate(0deg)'; });
+  }
+
   showNext();
-  screen.onclick = () => showNext();
+  screen.onclick = () => {
+    // idx = next line to show; add effects when about to display target lines
+    if (idx === 4) addFog();
+    if (idx === 8) { if (fogEl) { fogEl.style.opacity='0'; } addNova(); }
+    showNext();
+  };
 }
 
 function replayOpening() {
@@ -2614,10 +2781,14 @@ function startLevel(id){
   document.getElementById('introTag').textContent=`關卡 ${id}　${lv.name}`;
   document.getElementById('introMonName').textContent=lv.mnm;
   goTo('s-intro');
+  correctCount = 0;
+  comboCount = 0;
   runCountdown(['3','2','1','GO!'], async ()=>{
     goTo('s-game');
     setupGame();
     initFire();
+    updateWorldRestore();
+    resetRestoreBar();
     const dlg=LEVEL_DIALOGS[id];
     if(dlg) await showDialog(dlg);
     startLvTimer();
@@ -2714,9 +2885,15 @@ function submit(){
     GS.score+=pts;
     GS.starsEarned++;
     GS.totalCorrect++;
+    correctCount++;
+    comboCount++;
     logAnswer(curId, q.text, num, true, Math.round(secs*1000));
     updateDailyTask('correct', 1);
     GS.monHp--;
+    updateWorldRestore();
+    updateRestoreBar();
+    showRestoreEffect();
+    showComboPopup(comboCount);
     clearInterval(GS.qTimerId);
     showScoreFloat(pts, secs);
     doCorrectAnim(()=>{
@@ -2729,9 +2906,11 @@ function submit(){
     sfx('wrong');
     GS.wrongThisQ++;
     GS.wrongTotal++;
+    comboCount = 0;
     GS.score=Math.max(GS.score-50,-999);
     GS.heroHp--;
     logAnswer(curId, q.text, num, false, Math.round(secs*1000));
+    showWrongMsg();
     updateHUD();
     clearInterval(GS.qTimerId);
     if(GS.heroHp<=0){
@@ -2874,9 +3053,9 @@ function endGame(result){
         },2000);
       }
     };
-    // 第 8 關通關先播結局對話，再顯示 s-win
+    // 第 8 關通關先播精靈甦醒動畫和結局對話，再顯示 s-win
     if(curId==='8'){
-      showDialog(WIN8_DIALOG).then(doShowWin);
+      showSpiritAwaken('images/phoenix.jpg','焰羽甦醒').then(()=>showDialog(WIN8_DIALOG)).then(doShowWin);
     } else {
       doShowWin();
     }
