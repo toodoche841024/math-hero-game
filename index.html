@@ -593,6 +593,7 @@ select option{background:#1a1a3e;color:#fff}
   opacity:0;animation:dlgBlink 0.8s ease-in-out infinite;letter-spacing:1px}
 .dialog-arrow.visible{opacity:1}
 @keyframes dlgBlink{0%,100%{opacity:0.2}50%{opacity:1}}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:500px){
   .dialog-box{padding:14px 12px 28px;gap:10px;min-height:120px}
   .dialog-avatar{width:48px;height:48px}
@@ -675,6 +676,37 @@ select option{background:#1a1a3e;color:#fff}
   </div>
 </div>
 
+<!-- ── S-Opening: Story Intro ── -->
+<div id="s-opening" class="screen" style="background:#000;justify-content:center;align-items:center;cursor:pointer">
+  <div id="opening-text" style="text-align:center;padding:40px 32px;max-width:500px;width:100%"></div>
+  <div style="position:absolute;bottom:44px;color:rgba(255,255,255,0.3);font-size:13px;letter-spacing:3px;animation:dlgBlink 1.2s ease-in-out infinite">點 擊 繼 續</div>
+</div>
+
+<!-- ── S-Choose-Gender: Character Select ── -->
+<div id="s-choose-gender" class="screen" style="background:radial-gradient(ellipse at 50% 30%,#0d0d2e,#000);justify-content:center;align-items:center">
+  <div style="text-align:center;padding:24px 20px;max-width:400px;width:100%">
+    <div style="display:flex;align-items:flex-start;gap:12px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.25);border-radius:14px;padding:16px;margin-bottom:28px;text-align:left">
+      <img src="images/nova.jpg" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,215,0,0.5);flex-shrink:0">
+      <div>
+        <div style="color:#f8d000;font-size:13px;font-weight:700;margin-bottom:4px">小星</div>
+        <div id="gender-nova-text" style="color:#fff;font-size:14px;line-height:1.6">嗨！我是小星！在開始冒險之前，讓我看看你是哪一種守護者？</div>
+      </div>
+    </div>
+    <div id="gender-btn-row" style="display:flex;gap:16px;justify-content:center">
+      <button onclick="chooseGender('boy')"
+        style="flex:1;max-width:160px;background:rgba(0,150,255,0.12);border:2px solid rgba(0,150,255,0.45);border-radius:16px;padding:24px 12px;cursor:pointer;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:8px">
+        <span style="font-size:40px">⚔️</span>
+        <span style="color:#88ccff;font-size:15px;font-weight:700">星界少年</span>
+      </button>
+      <button onclick="chooseGender('girl')"
+        style="flex:1;max-width:160px;background:rgba(255,100,200,0.12);border:2px solid rgba(255,100,200,0.45);border-radius:16px;padding:24px 12px;cursor:pointer;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:8px">
+        <span style="font-size:40px">🌟</span>
+        <span style="color:#ffaae0;font-size:15px;font-weight:700">星界少女</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ── S1: Title ── -->
 <div id="s-title" class="screen">
   <div class="top-bar-placeholder"></div>
@@ -737,7 +769,11 @@ select option{background:#1a1a3e;color:#fff}
       👨‍👩‍👧 切換家長模式
     </button>
 
-    <p style="color:rgba(255,255,255,0.2);font-size:11px;margin-top:20px;">用數學之力召喚守護神！</p>
+    <button onclick="replayOpening()"
+      style="background:none;border:none;color:rgba(255,255,255,0.25);font-size:12px;cursor:pointer;padding:6px;margin-top:16px;letter-spacing:1px;">
+      ✦ 重看開場故事
+    </button>
+    <p style="color:rgba(255,255,255,0.2);font-size:11px;margin-top:8px;">用數學之力召喚守護神！</p>
   </div>
 </div>
 
@@ -2365,6 +2401,88 @@ let curId=null;
 let GS={};
 
 // ═══════════════════════════════════════════════
+// OPENING STORY & GENDER SELECTION
+// ═══════════════════════════════════════════════
+const OPENING_LINES = [
+  { text: '在遙遠的宇宙中，有一種看不見的力量……' },
+  { text: '它叫做——數靈能量。', size: '22px' },
+  { text: '數字是一切生命的根基。' },
+  { text: '花朵因數字而綻放，海洋因數字而流動，星星因數字而閃耀。', size: '16px' },
+  { text: '但有一天，神秘的「混沌迷霧」突然出現……', color: '#ccc' },
+  { text: '它吞噬了星球的能量，大自然開始崩壞。', color: '#ccc' },
+  { text: '森林枯萎、海洋乾涸、動物陷入沉睡……', color: '#ccc', size: '16px' },
+  { text: '就在一切即將消逝的時刻——' },
+  { text: '生命之樹選中了你。', size: '28px', color: '#f8d000', bold: true },
+];
+
+function playOpening() {
+  goTo('s-opening');
+  let idx = 0;
+  const textEl = document.getElementById('opening-text');
+  const screen = document.getElementById('s-opening');
+
+  function showNext() {
+    if (idx >= OPENING_LINES.length) {
+      screen.onclick = null;
+      goTo('s-choose-gender');
+      return;
+    }
+    const line = OPENING_LINES[idx++];
+    textEl.innerHTML = '';
+    const p = document.createElement('p');
+    p.textContent = line.text;
+    p.style.cssText = [
+      `font-size:${line.size || '18px'}`,
+      `color:${line.color || '#fff'}`,
+      `font-weight:${line.bold ? '900' : '400'}`,
+      'line-height:1.9',
+      'margin:0',
+      'opacity:0',
+      'animation:fadeInUp 0.6s ease forwards',
+    ].join(';');
+    textEl.appendChild(p);
+  }
+
+  showNext();
+  screen.onclick = () => showNext();
+}
+
+function replayOpening() {
+  localStorage.removeItem('intro_done');
+  localStorage.removeItem('player_gender');
+  document.getElementById('gender-nova-text').textContent = '嗨！我是小星！在開始冒險之前，讓我看看你是哪一種守護者？';
+  document.getElementById('gender-btn-row').style.display = 'flex';
+  playOpening();
+}
+
+function chooseGender(gender) {
+  localStorage.setItem('player_gender', gender);
+  localStorage.setItem('intro_done', '1');
+
+  const responses = {
+    boy: '太帥了！準備好拯救宇宙了嗎，少年？',
+    girl: '太厲害了！準備好拯救宇宙了嗎，少女？',
+  };
+  document.getElementById('gender-nova-text').textContent = responses[gender];
+  document.getElementById('gender-btn-row').style.display = 'none';
+
+  try {
+    if (typeof currentUser !== 'undefined' && currentUser) {
+      db.from('players').update({ gender }).eq('id', currentUser.id).then(() => {});
+    }
+  } catch(e) {}
+
+  setTimeout(() => {
+    goTo('s-title');
+    if (typeof checkParentMessages === 'function') checkParentMessages();
+  }, 1500);
+}
+
+function getTitle() {
+  return localStorage.getItem('player_gender') === 'girl' ? '少女' : '少年';
+}
+
+// ═══════════════════════════════════════════════
 // DIALOG SYSTEM
 // ═══════════════════════════════════════════════
 const LEVEL_DIALOGS = {
@@ -2372,14 +2490,14 @@ const LEVEL_DIALOGS = {
     { speaker: '小星', img: 'images/nova.jpg', text: '守護者，你看……這裡曾經是最美麗的火焰森林。' },
     { speaker: '小星', img: 'images/nova.jpg', text: '但現在火焰全部熄滅了，變成一片灰燼……' },
     { speaker: '小星', img: 'images/nova.jpg', text: '只要你答對數學題，就能注入數靈能量，讓火焰花重新綻放！' },
-    { speaker: '小星', img: 'images/nova.jpg', text: '準備好了嗎？每一題答對，都是一朵花重新盛開！' },
+    { speaker: '小星', img: 'images/nova.jpg', text: '準備好了嗎，{稱呼}？每一題答對，都是一朵花重新盛開！' },
   ],
   '4': [
-    { speaker: '小星', img: 'images/nova.jpg', text: '你感覺到了嗎？森林正在慢慢恢復！' },
+    { speaker: '小星', img: 'images/nova.jpg', text: '你感覺到了嗎，{稱呼}？森林正在慢慢恢復！' },
     { speaker: '小星', img: 'images/nova.jpg', text: '繼續加油，火焰花已經開始冒出新芽了！' },
   ],
   '8': [
-    { speaker: '小星', img: 'images/nova.jpg', text: '守護者！這是燃燒星最深處！' },
+    { speaker: '小星', img: 'images/nova.jpg', text: '{稱呼}！這是燃燒星最深處！' },
     { speaker: '小星', img: 'images/nova.jpg', text: '火鳳凰焰羽就沉睡在這裡……只要打完這一關，牠就會醒過來！' },
     { speaker: '小星', img: 'images/nova.jpg', text: '這會是最艱難的一戰，但我相信你！' },
   ],
@@ -2439,7 +2557,7 @@ function showDialog(lines){
       speakerEl.textContent=line.speaker;
       textEl.textContent='';
       arrow.classList.remove('visible');
-      fullText=line.text;
+      fullText=line.text.replace(/\{稱呼\}/g, getTitle());
       isTyping=true;
       let charIdx=0;
       clearInterval(typeTimer);
@@ -4608,6 +4726,16 @@ async function afterLogin() {
     showModeSelect();
   } else {
     isParentMode = false;
+    navigateAfterLogin();
+  }
+}
+
+function navigateAfterLogin() {
+  if (!localStorage.getItem('intro_done')) {
+    playOpening();
+  } else if (!localStorage.getItem('player_gender')) {
+    goTo('s-choose-gender');
+  } else {
     goTo('s-title');
     checkParentMessages();
   }
@@ -4640,8 +4768,7 @@ function enterParentMode() {
 function enterGameMode() {
   isParentMode = false;
   document.getElementById('mode-select-modal').style.display = 'none';
-  goTo('s-title');
-  checkParentMessages();
+  navigateAfterLogin();
 }
 
 function switchMode() {
