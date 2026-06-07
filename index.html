@@ -884,14 +884,22 @@ select option{background:#1a1a3e;color:#fff}
     </div>
   </div>
 
-  <!-- Restore Progress Bar -->
-  <div id="restore-bar-wrap" style="width:100%;padding:4px 16px;box-sizing:border-box;flex-shrink:0">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
-      <span id="restore-label" style="color:#aaa;font-size:11px">🌍 星球恢復度</span>
-      <span id="restore-percent" style="color:#f8d000;font-size:11px">0%</span>
+  <!-- Energy Bottle + Restore Bar -->
+  <div id="energy-bottle-area" style="display:flex;align-items:center;justify-content:space-between;padding:4px 16px;box-sizing:border-box;flex-shrink:0;gap:10px">
+    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+      <div id="energy-bottle" style="position:relative;width:36px;height:50px;border:2px solid rgba(255,215,0,0.5);border-radius:0 0 10px 10px;background:rgba(0,0,0,0.3);overflow:hidden">
+        <div id="energy-fill" style="position:absolute;bottom:0;left:0;right:0;height:0%;background:linear-gradient(to top,#f8d000,#ffeb3b);transition:height 0.5s ease;border-radius:0 0 8px 8px"></div>
+      </div>
+      <span id="energy-label" style="color:#f8d000;font-size:12px">0/10</span>
     </div>
-    <div style="background:rgba(100,50,150,0.3);border-radius:10px;height:8px;overflow:hidden">
-      <div id="restore-fill" style="height:100%;width:0%;border-radius:10px;transition:width 0.5s ease,background 0.5s ease;background:linear-gradient(90deg,#6b3fa0,#9b59b6)"></div>
+    <div style="flex:1">
+      <div style="display:flex;justify-content:space-between;margin-bottom:2px">
+        <span style="color:#aaa;font-size:11px">星球恢復度</span>
+        <span id="restore-percent" style="color:#f8d000;font-size:11px">0%</span>
+      </div>
+      <div style="background:rgba(100,50,150,0.3);border-radius:10px;height:8px;overflow:hidden">
+        <div id="restore-fill" style="height:100%;width:0%;border-radius:10px;transition:width 0.5s ease,background 0.5s ease;background:linear-gradient(90deg,#6b3fa0,#9b59b6)"></div>
+      </div>
     </div>
   </div>
 
@@ -2418,6 +2426,7 @@ let GS={};
 // ═══════════════════════════════════════════════
 let correctCount = 0;
 let comboCount = 0;
+let monScale = 1.0;
 
 function getPlanetType(id) {
   const n = parseInt(id);
@@ -2429,98 +2438,152 @@ function getPlanetType(id) {
 }
 
 const RESTORE_EMOJIS = {
-  burning: ['🔥','🌸'], ocean: ['🐠','🪸'],
+  burning: ['🌸','🔥'], ocean: ['🐠','🪸'],
   thunder: ['⚡','🌿'], moon: ['🌙','✨'], hall: ['🌟','💫'],
 };
-const RESTORE_MSGS = ['又一朵花綻放了！','能量正在恢復！','太厲害了！','就是這樣！繼續加油！','星球正在甦醒！'];
-const WRONG_MSGS = ['沒關係，再試一次！','慢慢來，你可以的。','深呼吸，下一題等你！'];
 
+// ── World restore filter ──
 function updateWorldRestore() {
   const bs = document.getElementById('battleStage');
   if (!bs) return;
   const c = correctCount;
   let f;
   if (c === 0)     f = 'grayscale(80%) brightness(0.6)';
-  else if (c <= 2) f = 'grayscale(60%) brightness(0.7)';
-  else if (c <= 4) f = 'grayscale(40%) brightness(0.8)';
-  else if (c <= 6) f = 'grayscale(20%) brightness(0.9)';
+  else if (c <= 2) f = 'grayscale(65%) brightness(0.7)';
+  else if (c <= 4) f = 'grayscale(45%) brightness(0.8)';
+  else if (c <= 6) f = 'grayscale(25%) brightness(0.85)';
+  else if (c <= 8) f = 'grayscale(10%) brightness(0.95)';
   else             f = 'grayscale(0%) brightness(1.0)';
   bs.style.filter = f;
 }
 
-function updateRestoreBar() {
-  const fill = document.getElementById('restore-fill');
-  const pct  = document.getElementById('restore-percent');
-  const label= document.getElementById('restore-label');
-  if (!fill) return;
+// ── Energy bottle + restore bar ──
+function updateEnergyBottle() {
   const total = GS.totalQ || 10;
   const p = Math.min(100, Math.round(correctCount / total * 100));
-  fill.style.width = p + '%';
-  if (pct) pct.textContent = p + '%';
-  if (p <= 30)      fill.style.background = 'linear-gradient(90deg,#6b3fa0,#9b59b6)';
-  else if (p <= 60) fill.style.background = 'linear-gradient(90deg,#1a8a6e,#2ecc71)';
-  else if (p <= 90) fill.style.background = 'linear-gradient(90deg,#e67e22,#f1c40f)';
-  else              fill.style.background = 'linear-gradient(90deg,#f1c40f,#f8d000)';
-  if (p >= 100 && label) label.textContent = '🌍 生機盎然！';
+  const fill  = document.getElementById('energy-fill');
+  const label = document.getElementById('energy-label');
+  const rFill = document.getElementById('restore-fill');
+  const rPct  = document.getElementById('restore-percent');
+  if (fill)  fill.style.height = p + '%';
+  if (label) label.textContent = correctCount + '/' + total;
+  if (rFill) {
+    rFill.style.width = p + '%';
+    if (p < 30)      rFill.style.background = 'linear-gradient(90deg,#6b3fa0,#9b59b6)';
+    else if (p < 60) rFill.style.background = 'linear-gradient(90deg,#1a8a6e,#2ecc71)';
+    else if (p < 90) rFill.style.background = 'linear-gradient(90deg,#e67e22,#f1c40f)';
+    else             rFill.style.background = 'linear-gradient(90deg,#f1c40f,#f8d000)';
+  }
+  if (rPct) rPct.textContent = p + '%';
 }
 
-function resetRestoreBar() {
-  const fill = document.getElementById('restore-fill');
-  const pct  = document.getElementById('restore-percent');
-  const label= document.getElementById('restore-label');
-  if (fill)  { fill.style.width = '0%'; fill.style.background = 'linear-gradient(90deg,#6b3fa0,#9b59b6)'; }
-  if (pct)   pct.textContent = '0%';
-  if (label) label.textContent = '🌍 星球恢復度';
+function resetEnergyBottle() {
+  const fill  = document.getElementById('energy-fill');
+  const label = document.getElementById('energy-label');
+  const rFill = document.getElementById('restore-fill');
+  const rPct  = document.getElementById('restore-percent');
+  if (fill)  fill.style.height = '0%';
+  if (label) label.textContent = '0/10';
+  if (rFill) { rFill.style.width = '0%'; rFill.style.background = 'linear-gradient(90deg,#6b3fa0,#9b59b6)'; }
+  if (rPct)  rPct.textContent = '0%';
 }
 
-function showBattleMsg(text, color, duration) {
-  const bs = document.getElementById('battleStage');
-  if (!bs) return;
-  const el = document.createElement('div');
-  el.textContent = text;
-  el.style.cssText = `position:absolute;left:50%;bottom:10px;transform:translateX(-50%);color:${color};font-size:14px;font-family:'Noto Sans TC',sans-serif;z-index:50;pointer-events:none;white-space:nowrap;opacity:1;transition:opacity 0.4s;`;
-  bs.appendChild(el);
-  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 400); }, duration || 1100);
+// ── Monster scale ──
+function updateMonScale() {
+  const ms = document.getElementById('monSprite');
+  if (ms) ms.style.transform = `scale(${monScale})`;
 }
 
-function showRestoreEffect() {
+// ── Correct animations ──
+function showStarDrop() {
+  const bottle = document.getElementById('energy-bottle');
+  if (!bottle) return;
+  const rect = bottle.getBoundingClientRect();
+  const span = document.createElement('span');
+  span.textContent = '⭐';
+  span.style.cssText = `position:fixed;left:${rect.left + rect.width/2 - 10}px;top:${rect.top - 30}px;font-size:20px;z-index:500;pointer-events:none;opacity:1;transition:transform 0.6s ease,opacity 0.6s ease;`;
+  document.body.appendChild(span);
+  requestAnimationFrame(() => { span.style.transform = 'translateY(40px)'; span.style.opacity = '0'; });
+  setTimeout(() => span.remove(), 700);
+}
+
+function showRestoreFloat() {
   const bs = document.getElementById('battleStage');
   if (!bs) return;
   const emojis = RESTORE_EMOJIS[getPlanetType(curId)] || ['✨'];
   const emoji = emojis[Math.floor(Math.random() * emojis.length)];
   const span = document.createElement('span');
   span.textContent = emoji;
-  span.style.cssText = `position:absolute;font-size:28px;z-index:30;pointer-events:none;left:${15+Math.random()*60}%;bottom:35%;animation:floatUp 1.5s ease forwards;`;
+  span.style.cssText = `position:absolute;font-size:28px;z-index:30;pointer-events:none;left:${15+Math.random()*60}%;bottom:35%;opacity:1;transition:transform 1.2s ease,opacity 1.2s ease;`;
   bs.appendChild(span);
-  setTimeout(() => span.remove(), 1500);
-  showBattleMsg(RESTORE_MSGS[Math.floor(Math.random()*RESTORE_MSGS.length)], '#f8d000', 1100);
+  requestAnimationFrame(() => { span.style.transform = 'translateY(-60px) scale(1.3)'; span.style.opacity = '0'; });
+  setTimeout(() => span.remove(), 1300);
 }
 
-function showWrongMsg() {
-  showBattleMsg(WRONG_MSGS[Math.floor(Math.random()*WRONG_MSGS.length)], 'rgba(255,255,255,0.8)', 1100);
+const ENCOURAGE_MSGS = ['答對了！','完美！','能量正在恢復！','太厲害了！','就是這樣！'];
+function showEncourageText() {
+  const el = document.createElement('div');
+  el.textContent = ENCOURAGE_MSGS[Math.floor(Math.random() * ENCOURAGE_MSGS.length)];
+  el.style.cssText = `position:fixed;left:50%;top:62%;transform:translateX(-50%);color:#f8d000;font-size:15px;font-weight:bold;font-family:'Noto Sans TC',sans-serif;z-index:200;pointer-events:none;opacity:1;white-space:nowrap;text-shadow:0 0 10px #f8d000;transition:transform 1.5s ease,opacity 1.5s ease;`;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => { el.style.transform = 'translateX(-50%) translateY(-30px)'; el.style.opacity = '0'; });
+  setTimeout(() => el.remove(), 1600);
 }
 
+function showHeroGlow() {
+  const img = document.querySelector('#heroSprite img');
+  if (!img) return;
+  img.style.transition = 'filter 0.1s ease';
+  img.style.filter = 'brightness(1.5) drop-shadow(0 0 10px gold)';
+  setTimeout(() => { img.style.filter = ''; }, 400);
+}
+
+// ── Wrong animations ──
+const COMFORT_MSGS = ['沒關係！','慢慢來！','深呼吸，你可以的！','再試一次！'];
+function showComfortText() {
+  const el = document.createElement('div');
+  el.textContent = COMFORT_MSGS[Math.floor(Math.random() * COMFORT_MSGS.length)];
+  el.style.cssText = `position:fixed;left:50%;top:62%;transform:translateX(-50%);color:#fff;font-size:14px;font-family:'Noto Sans TC',sans-serif;z-index:200;pointer-events:none;opacity:1;white-space:nowrap;transition:transform 1.5s ease,opacity 1.5s ease;`;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => { el.style.transform = 'translateX(-50%) translateY(-30px)'; el.style.opacity = '0'; });
+  setTimeout(() => el.remove(), 1600);
+}
+
+function showWrongFogEffect() {
+  const ms = document.getElementById('monSprite');
+  const bs = document.getElementById('battleStage');
+  if (!ms || !bs) return;
+  ms.style.transition = 'transform 0.15s ease';
+  ms.style.transform = `scale(${monScale * 1.05})`;
+  setTimeout(() => { ms.style.transform = `scale(${monScale})`; }, 300);
+  const fog = document.createElement('div');
+  fog.style.cssText = `position:absolute;right:12%;bottom:28%;width:60px;height:60px;border-radius:50%;background:rgba(150,0,255,0.45);transform:scale(0);opacity:0.5;transition:transform 0.8s ease,opacity 0.8s ease;z-index:35;pointer-events:none;`;
+  bs.appendChild(fog);
+  requestAnimationFrame(() => { fog.style.transform = 'scale(1.5)'; fog.style.opacity = '0'; });
+  setTimeout(() => fog.remove(), 900);
+}
+
+// ── Combo ──
 const COMBO_CFG = {
-  3:  { text: '🔥 三連擊！',                           color: '#ff9944', size: '24px' },
-  5:  { text: '🔥🔥 五連擊！迷霧正在退散！',           color: '#ffd700', size: '28px' },
-  7:  { text: '🔥🔥🔥 七連擊！！',                     color: '#ffd700', size: '32px' },
-  10: { text: '⭐ 十連擊！！！你就是傳說中的守護者！',  color: '#ffd700', size: '36px', blink: true },
+  3:  { text: '3 連擊！',                          color: '#ff9944', size: '22px' },
+  5:  { text: '5 連擊！迷霧正在退散！',             color: '#ffd700', size: '26px' },
+  7:  { text: '7 連擊！！',                         color: '#ffd700', size: '30px' },
+  10: { text: '10 連擊！！！你就是傳說中的守護者！', color: '#ffd700', size: '34px', blink: true },
 };
 
 function showComboPopup(combo) {
   const cfg = COMBO_CFG[combo];
   if (!cfg) return;
-  const bs = document.getElementById('battleStage');
-  if (!bs) return;
   const el = document.createElement('div');
   el.textContent = cfg.text;
-  el.style.cssText = `position:absolute;left:50%;top:28%;transform:translateX(-50%) scale(0);color:${cfg.color};font-size:${cfg.size};font-weight:900;font-family:'Noto Sans TC',sans-serif;z-index:60;pointer-events:none;white-space:nowrap;text-shadow:0 0 20px ${cfg.color};transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1),opacity 0.4s;`;
+  el.style.cssText = `position:fixed;left:50%;top:40%;transform:translateX(-50%) scale(0);color:${cfg.color};font-size:${cfg.size};font-weight:900;font-family:'Noto Sans TC',sans-serif;z-index:300;pointer-events:none;white-space:nowrap;text-shadow:0 0 20px ${cfg.color};transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1),opacity 0.4s;`;
   if (cfg.blink) el.style.animation = 'tFlash 0.5s ease-in-out infinite alternate';
-  bs.appendChild(el);
+  document.body.appendChild(el);
   requestAnimationFrame(() => { el.style.transform = 'translateX(-50%) scale(1)'; });
   setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 400); }, 1500);
 }
 
+// ── Spirit awakening ──
 function showSpiritAwaken(spiritImg, spiritName) {
   return new Promise(resolve => {
     const div = document.createElement('div');
@@ -2783,12 +2846,13 @@ function startLevel(id){
   goTo('s-intro');
   correctCount = 0;
   comboCount = 0;
+  monScale = 1.0;
   runCountdown(['3','2','1','GO!'], async ()=>{
     goTo('s-game');
     setupGame();
     initFire();
     updateWorldRestore();
-    resetRestoreBar();
+    resetEnergyBottle();
     const dlg=LEVEL_DIALOGS[id];
     if(dlg) await showDialog(dlg);
     startLvTimer();
@@ -2812,13 +2876,17 @@ function runCountdown(steps,done){
 function setupGame(){
   const lv=LEVELS[curId];
   document.getElementById('hudTag').textContent=`關卡 ${curId}　${lv.name}`;
-  document.getElementById('monLabel').textContent=lv.mnm;
+  document.getElementById('monLabel').textContent='混沌迷霧';
+  const gender = localStorage.getItem('player_gender');
+  const heroSrc = gender === 'girl' ? 'images/girl.jpg' : 'images/boy.jpg';
   const hs=document.getElementById('heroSprite');
-  hs.innerHTML=heroSVG(3);
+  hs.innerHTML=`<img src="${heroSrc}" style="width:80px;height:120px;object-fit:cover;border-radius:12px;display:block;transition:filter 0.4s ease;" onerror="this.style.display='none'">`;
   hs.dataset.char='hero';
   const ms=document.getElementById('monSprite');
-  ms.innerHTML=MON_SVG_FN[lv.mon]();
-  ms.dataset.char=lv.mon;
+  ms.innerHTML=`<img src="images/fog.jpg" style="width:80px;height:120px;object-fit:cover;border-radius:50%;opacity:0.85;display:block;">`;
+  ms.dataset.char='fog';
+  ms.style.transition='transform 0.3s ease';
+  ms.style.transform=`scale(${monScale})`;
   updateHUD();
 }
 
@@ -2832,9 +2900,6 @@ function updateHUD(){
   document.getElementById('monHpFill').style.width=(g.monHp/g.totalQ*100)+'%';
   document.getElementById('monHpTxt').textContent=`${g.monHp}/${g.totalQ}`;
   document.getElementById('scoreDisp').textContent=`${g.score}分`;
-  // refresh hero (HP colour changes)
-  const hs=document.getElementById('heroSprite');
-  hs.innerHTML=heroSVG(g.heroHp);
 }
 
 function startLvTimer(){
@@ -2890,9 +2955,14 @@ function submit(){
     logAnswer(curId, q.text, num, true, Math.round(secs*1000));
     updateDailyTask('correct', 1);
     GS.monHp--;
+    monScale = Math.max(0.5, monScale - 0.05);
     updateWorldRestore();
-    updateRestoreBar();
-    showRestoreEffect();
+    updateEnergyBottle();
+    updateMonScale();
+    showStarDrop();
+    showRestoreFloat();
+    showEncourageText();
+    showHeroGlow();
     showComboPopup(comboCount);
     clearInterval(GS.qTimerId);
     showScoreFloat(pts, secs);
@@ -2910,7 +2980,8 @@ function submit(){
     GS.score=Math.max(GS.score-50,-999);
     GS.heroHp--;
     logAnswer(curId, q.text, num, false, Math.round(secs*1000));
-    showWrongMsg();
+    showWrongFogEffect();
+    showComfortText();
     updateHUD();
     clearInterval(GS.qTimerId);
     if(GS.heroHp<=0){
@@ -2957,7 +3028,12 @@ function doCorrectAnim(cb){
     hs.classList.remove('anim-hero-atk');
     ms.classList.add('anim-flash-hit','anim-shake');
     fo.className='screen-flash-overlay sfo-yellow';
-    setTimeout(()=>{ms.classList.remove('anim-flash-hit','anim-shake');fo.className='screen-flash-overlay';cb();},320);
+    setTimeout(()=>{
+      ms.classList.remove('anim-flash-hit','anim-shake');
+      ms.style.transform=`scale(${monScale})`;
+      fo.className='screen-flash-overlay';
+      cb();
+    },320);
   },250);
 }
 
@@ -2968,6 +3044,7 @@ function doWrongAnim(cb){
   ms.classList.add('anim-mon-atk');
   setTimeout(()=>{
     ms.classList.remove('anim-mon-atk');
+    ms.style.transform=`scale(${monScale})`;
     hs.classList.add('anim-flash-hurt','anim-shake');
     fo.className='screen-flash-overlay sfo-red';
     setTimeout(()=>{hs.classList.remove('anim-flash-hurt','anim-shake');fo.className='screen-flash-overlay';cb();},320);
