@@ -2520,10 +2520,10 @@ function showRestoreFloat() {
   setTimeout(() => span.remove(), 1300);
 }
 
-const ENCOURAGE_MSGS = ['答對了！','完美！','能量正在恢復！','太厲害了！','就是這樣！'];
+const GAME_ENCOURAGE_MSGS = ['答對了！','完美！','能量正在恢復！','太厲害了！','就是這樣！'];
 function showEncourageText() {
   const el = document.createElement('div');
-  el.textContent = ENCOURAGE_MSGS[Math.floor(Math.random() * ENCOURAGE_MSGS.length)];
+  el.textContent = GAME_ENCOURAGE_MSGS[Math.floor(Math.random() * GAME_ENCOURAGE_MSGS.length)];
   el.style.cssText = `position:fixed;left:50%;top:62%;transform:translateX(-50%);color:#f8d000;font-size:15px;font-weight:bold;font-family:'Noto Sans TC',sans-serif;z-index:200;pointer-events:none;opacity:1;white-space:nowrap;text-shadow:0 0 10px #f8d000;transition:transform 1.5s ease,opacity 1.5s ease;`;
   document.body.appendChild(el);
   requestAnimationFrame(() => { el.style.transform = 'translateX(-50%) translateY(-30px)'; el.style.opacity = '0'; });
