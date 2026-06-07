@@ -574,6 +574,31 @@ select option{background:#1a1a3e;color:#fff}
 #s-win{justify-content:flex-start!important}
 #s-lose{justify-content:flex-start!important}
 #s-celebrate{justify-content:flex-start!important}
+
+/* ── Dialog System ── */
+.dialog-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:3000;
+  display:flex;align-items:flex-end;opacity:0;transition:opacity 0.3s;pointer-events:none}
+.dialog-overlay.dlg-visible{opacity:1;pointer-events:auto}
+.dialog-box{width:100%;background:#1a1a3e;border:1px solid rgba(255,215,0,0.4);
+  border-radius:16px 16px 0 0;padding:20px 16px 32px;
+  display:flex;align-items:flex-start;gap:14px;position:relative;min-height:160px;
+  transform:translateY(20px);transition:transform 0.3s}
+.dialog-overlay.dlg-visible .dialog-box{transform:translateY(0)}
+.dialog-avatar{width:60px;height:60px;border-radius:50%;object-fit:cover;flex-shrink:0;
+  border:2px solid rgba(255,215,0,0.5);margin-top:4px}
+.dialog-content{flex:1;min-width:0}
+.dialog-speaker{color:#f8d000;font-size:14px;font-weight:700;margin-bottom:6px}
+.dialog-text{color:#fff;font-size:15px;line-height:1.7}
+.dialog-arrow{position:absolute;bottom:12px;right:16px;color:#f8d000;font-size:12px;
+  opacity:0;animation:dlgBlink 0.8s ease-in-out infinite;letter-spacing:1px}
+.dialog-arrow.visible{opacity:1}
+@keyframes dlgBlink{0%,100%{opacity:0.2}50%{opacity:1}}
+@media(max-width:500px){
+  .dialog-box{padding:14px 12px 28px;gap:10px;min-height:120px}
+  .dialog-avatar{width:48px;height:48px}
+  .dialog-text{font-size:14px}
+  .dialog-speaker{font-size:13px}
+}
 </style>
 </head>
 <body>
@@ -2339,6 +2364,119 @@ function gradeV(g){return{S:4,A:3,B:2,C:1}[g]||0;}
 let curId=null;
 let GS={};
 
+// ═══════════════════════════════════════════════
+// DIALOG SYSTEM
+// ═══════════════════════════════════════════════
+const LEVEL_DIALOGS = {
+  '1': [
+    { speaker: '小星', img: 'images/nova.jpg', text: '守護者，你看……這裡曾經是最美麗的火焰森林。' },
+    { speaker: '小星', img: 'images/nova.jpg', text: '但現在火焰全部熄滅了，變成一片灰燼……' },
+    { speaker: '小星', img: 'images/nova.jpg', text: '只要你答對數學題，就能注入數靈能量，讓火焰花重新綻放！' },
+    { speaker: '小星', img: 'images/nova.jpg', text: '準備好了嗎？每一題答對，都是一朵花重新盛開！' },
+  ],
+  '4': [
+    { speaker: '小星', img: 'images/nova.jpg', text: '你感覺到了嗎？森林正在慢慢恢復！' },
+    { speaker: '小星', img: 'images/nova.jpg', text: '繼續加油，火焰花已經開始冒出新芽了！' },
+  ],
+  '8': [
+    { speaker: '小星', img: 'images/nova.jpg', text: '守護者！這是燃燒星最深處！' },
+    { speaker: '小星', img: 'images/nova.jpg', text: '火鳳凰焰羽就沉睡在這裡……只要打完這一關，牠就會醒過來！' },
+    { speaker: '小星', img: 'images/nova.jpg', text: '這會是最艱難的一戰，但我相信你！' },
+  ],
+};
+
+const WIN8_DIALOG = [
+  { speaker: '小星', img: 'images/nova.jpg', text: '守護者！你感覺到了嗎？火焰森林正在復甦！' },
+  { speaker: '焰羽', img: 'images/phoenix.jpg', text: '……謝謝你，年輕的守護者。我沉睡了好久好久。' },
+  { speaker: '焰羽', img: 'images/phoenix.jpg', text: '你的數學之力讓這片森林重獲新生。我將賜予你「火焰的祝福」。' },
+  { speaker: '小星', img: 'images/nova.jpg', text: '太棒了！我們拿到第一個祝福了！' },
+  { speaker: '小星', img: 'images/nova.jpg', text: '但還有其他星球需要我們的幫助……繼續前進吧！' },
+];
+
+function showDialog(lines){
+  return new Promise(resolve=>{
+    const overlay=document.createElement('div');
+    overlay.className='dialog-overlay';
+
+    const box=document.createElement('div');
+    box.className='dialog-box';
+
+    const img=document.createElement('img');
+    img.className='dialog-avatar';
+
+    const content=document.createElement('div');
+    content.className='dialog-content';
+
+    const speakerEl=document.createElement('div');
+    speakerEl.className='dialog-speaker';
+
+    const textEl=document.createElement('div');
+    textEl.className='dialog-text';
+
+    const arrow=document.createElement('div');
+    arrow.className='dialog-arrow';
+    arrow.textContent='▶ 點擊繼續';
+
+    content.appendChild(speakerEl);
+    content.appendChild(textEl);
+    box.appendChild(img);
+    box.appendChild(content);
+    box.appendChild(arrow);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    let lineIdx=0, typeTimer=null, isTyping=false, fullText='';
+
+    function showLine(idx){
+      if(idx>=lines.length){
+        overlay.style.transition='opacity 0.3s';
+        overlay.style.opacity='0';
+        setTimeout(()=>{ overlay.remove(); resolve(); },300);
+        return;
+      }
+      const line=lines[idx];
+      img.src=line.img;
+      speakerEl.textContent=line.speaker;
+      textEl.textContent='';
+      arrow.classList.remove('visible');
+      fullText=line.text;
+      isTyping=true;
+      let charIdx=0;
+      clearInterval(typeTimer);
+      typeTimer=setInterval(()=>{
+        charIdx++;
+        textEl.textContent=fullText.slice(0,charIdx);
+        if(charIdx>=fullText.length){
+          clearInterval(typeTimer);
+          isTyping=false;
+          arrow.classList.add('visible');
+        }
+      },40);
+    }
+
+    function onTap(e){
+      e.stopPropagation();
+      if(isTyping){
+        clearInterval(typeTimer);
+        isTyping=false;
+        textEl.textContent=fullText;
+        arrow.classList.add('visible');
+      } else {
+        lineIdx++;
+        showLine(lineIdx);
+      }
+    }
+
+    overlay.addEventListener('click', onTap);
+    overlay.addEventListener('touchend', e=>{ e.preventDefault(); onTap(e); });
+
+    requestAnimationFrame(()=>{
+      overlay.classList.add('dlg-visible');
+      showLine(0);
+    });
+  });
+}
+
 function startLevel(id){
   try{ac();}catch(e){} // 在使用者點擊當下 resume AudioContext，避免第一題無聲
   curId=id;
@@ -2358,10 +2496,12 @@ function startLevel(id){
   document.getElementById('introTag').textContent=`關卡 ${id}　${lv.name}`;
   document.getElementById('introMonName').textContent=lv.mnm;
   goTo('s-intro');
-  runCountdown(['3','2','1','GO!'],()=>{
+  runCountdown(['3','2','1','GO!'], async ()=>{
     goTo('s-game');
     setupGame();
     initFire();
+    const dlg=LEVEL_DIALOGS[id];
+    if(dlg) await showDialog(dlg);
     startLvTimer();
     nextQ();
   });
@@ -2607,13 +2747,20 @@ function endGame(result){
     addBtn('回地圖','btn-sec',()=>goTo('s-world'));
     addBtn('我的收藏','btn-sec',()=>goTo('s-collection'));
     }; // end showWinScreen
-    // 先顯示結算畫面（s-win），里程碑關卡再延遲2秒跳慶祝
-    showWinScreen();
-    if(CELEB_DATA[curId]){
-      _celebTimeout=setTimeout(()=>{
-        _celebTimeout=null;
-        showCelebration(curId,()=>goTo('s-world'));
-      },2000);
+    const doShowWin=()=>{
+      showWinScreen();
+      if(CELEB_DATA[curId]){
+        _celebTimeout=setTimeout(()=>{
+          _celebTimeout=null;
+          showCelebration(curId,()=>goTo('s-world'));
+        },2000);
+      }
+    };
+    // 第 8 關通關先播結局對話，再顯示 s-win
+    if(curId==='8'){
+      showDialog(WIN8_DIALOG).then(doShowWin);
+    } else {
+      doShowWin();
     }
 
   } else {
