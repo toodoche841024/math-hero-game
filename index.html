@@ -599,7 +599,7 @@ select option{background:#1a1a3e;color:#fff}
 .puzzle-cell.got{border-color:rgba(255,215,0,0.25);}
 .puzzle-grid-wrap.complete .puzzle-cell{animation:puzzlePulse 2s ease-in-out infinite;border-color:rgba(255,215,0,0.5);}
 @keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-80px) scale(1.5)}}
-.battle-stage{filter:grayscale(80%) brightness(0.6);transition:filter 0.8s ease}
+/* .battle-stage removed — replaced by #scene-area */
 @media(max-width:500px){
   .dialog-box{padding:14px 12px 28px;gap:10px;min-height:120px}
   .dialog-avatar{width:48px;height:48px}
@@ -869,32 +869,30 @@ select option{background:#1a1a3e;color:#fff}
     </div>
   </div>
 
-  <!-- Battle Stage -->
-  <div class="battle-stage" id="battleStage">
-    <div class="stage-bg"></div>
-    <svg class="volcano-layer" viewBox="0 0 400 180" preserveAspectRatio="none"
-      xmlns="http://www.w3.org/2000/svg" style="height:55%;bottom:0;position:absolute">
-      <defs>
-        <radialGradient id="vglow"><stop offset="0%" stop-color="#ff6600" stop-opacity="0.7"/>
-        <stop offset="100%" stop-color="#ff0000" stop-opacity="0"/></radialGradient>
-      </defs>
-      <path d="M0,180 L50,180 L90,100 L120,180 L200,180 L245,60 L290,180 L340,180 L375,90 L400,180 Z" fill="#120000"/>
-      <path d="M90,100 L78,180 L102,180 Z" fill="#cc2200" opacity="0.6"/>
-      <path d="M245,60 L230,180 L260,180 Z" fill="#cc2200" opacity="0.6"/>
-      <ellipse cx="90" cy="100" rx="22" ry="9" fill="url(#vglow)"/>
-      <ellipse cx="245" cy="60" rx="28" ry="11" fill="url(#vglow)"/>
-    </svg>
-    <div class="lava-crack"></div>
-    <div class="fire-particles" id="fireParticles"></div>
+  <!-- Scene Area -->
+  <div id="scene-area" style="position:relative;width:100%;flex:1;min-height:120px;max-height:220px;overflow:hidden;border-radius:8px;margin:0 auto;flex-shrink:0;">
 
-    <div class="fighter-wrap" id="heroWrap">
-      <div class="fighter-sprite" id="heroSprite" data-char="hero"></div>
-      <div class="fighter-label">召喚師</div>
-    </div>
-    <div class="fighter-wrap" id="monWrap">
-      <div class="fighter-sprite" id="monSprite"></div>
-      <div class="fighter-label" id="monLabel">-</div>
-    </div>
+    <!-- 枯萎場景（底層） -->
+    <img id="scene-dead" src="images/fire_dead.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;" onerror="this.style.background='#1a000a';this.style.display='block'">
+
+    <!-- 復甦場景（上層，一開始透明） -->
+    <img id="scene-alive" src="images/fire_alive.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2;opacity:0;transition:opacity 0.8s ease;" onerror="this.style.display='none'">
+
+    <!-- Canvas 粒子層 -->
+    <canvas id="particle-canvas" style="position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none;"></canvas>
+
+    <!-- 守護者角色（左下角） -->
+    <img id="scene-hero" style="position:absolute;bottom:8px;left:8px;width:50px;height:50px;border-radius:50%;object-fit:cover;z-index:4;border:2px solid rgba(255,215,0,0.5);box-shadow:0 0 10px rgba(255,215,0,0.3);transition:filter 0.3s ease;" src="images/boy.jpg" onerror="this.style.display='none'">
+
+    <!-- 迷霧怪（右上角，半透明） -->
+    <img id="scene-fog" src="images/fog.jpg" style="position:absolute;top:8px;right:8px;width:40px;height:40px;border-radius:50%;object-fit:cover;z-index:4;opacity:0.8;border:2px solid rgba(128,0,128,0.5);transition:opacity 0.5s ease,transform 0.3s ease;" onerror="this.style.display='none'">
+
+    <!-- 小星頭像（左上角） -->
+    <img src="images/nova.jpg" style="position:absolute;top:8px;left:8px;width:32px;height:32px;border-radius:50%;object-fit:cover;z-index:5;border:1px solid rgba(255,215,0,0.4);" onerror="this.style.display='none'">
+
+    <!-- 鼓勵文字層 -->
+    <div id="scene-text-layer" style="position:absolute;inset:0;z-index:6;pointer-events:none;"></div>
+
   </div>
 
   <!-- Energy Bottle + Restore Bar -->
@@ -2441,6 +2439,8 @@ let GS={};
 let correctCount = 0;
 let comboCount = 0;
 let monScale = 1.0;
+let particles = [];
+let particleAnimId = null;
 
 function getPlanetType(id) {
   const n = parseInt(id);
@@ -2456,19 +2456,105 @@ const RESTORE_EMOJIS = {
   thunder: ['⚡','🌿'], moon: ['🌙','✨'], hall: ['🌟','💫'],
 };
 
-// ── World restore filter ──
+// ── Particle system ──
+class Particle {
+  constructor(canvas) {
+    this.x = Math.random() * canvas.width;
+    this.y = canvas.height + 10;
+    this.size = Math.random() * 3 + 1;
+    this.speedY = -(Math.random() * 2 + 1);
+    this.speedX = (Math.random() - 0.5) * 1.5;
+    this.opacity = 1;
+    this.fadeRate = Math.random() * 0.015 + 0.008;
+    this.color = this._color();
+  }
+  _color() {
+    const n = parseInt(curId) || 1;
+    if (n <= 18) {
+      const c = ['#FFD700','#FFA500','#FF6347','#FFB347','#FFED4E'];
+      return c[Math.floor(Math.random() * c.length)];
+    }
+    const c = ['#00CED1','#48D1CC','#7FFFD4','#40E0D0','#00BFFF'];
+    return c[Math.floor(Math.random() * c.length)];
+  }
+  update() {
+    this.y += this.speedY;
+    this.x += this.speedX;
+    this.speedX += (Math.random() - 0.5) * 0.1;
+    this.opacity -= this.fadeRate;
+  }
+  draw(ctx) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, this.opacity);
+    ctx.fillStyle = this.color;
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function initParticleCanvas() {
+  const canvas = document.getElementById('particle-canvas');
+  if (!canvas) return;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width || 360;
+  canvas.height = rect.height || 180;
+}
+
+function spawnParticles(count) {
+  const canvas = document.getElementById('particle-canvas');
+  if (!canvas) return;
+  initParticleCanvas();
+  for (let i = 0; i < count; i++) {
+    setTimeout(() => particles.push(new Particle(canvas)), i * 40);
+  }
+  if (!particleAnimId) animateParticles();
+}
+
+function animateParticles() {
+  const canvas = document.getElementById('particle-canvas');
+  if (!canvas) { particleAnimId = null; return; }
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  particles = particles.filter(p => p.opacity > 0);
+  particles.forEach(p => { p.update(); p.draw(ctx); });
+  if (particles.length > 0) {
+    particleAnimId = requestAnimationFrame(animateParticles);
+  } else {
+    particleAnimId = null;
+  }
+}
+
+// ── Scene text ──
+const encourageTexts = ['能量正在恢復！','火焰花綻放了！','太厲害了！','世界在改變！','繼續加油！','完美！'];
+const comfortTexts   = ['沒關係！','慢慢來！','你可以的！','再試一次！','深呼吸！'];
+
+function showSceneText(text, color) {
+  const layer = document.getElementById('scene-text-layer');
+  if (!layer) return;
+  const el = document.createElement('div');
+  const c = color || '#FFD700';
+  el.textContent = text;
+  el.style.cssText = `color:${c};font-size:18px;font-weight:bold;font-family:'Noto Sans TC',sans-serif;text-shadow:0 0 10px rgba(0,0,0,0.8),0 0 20px ${c};opacity:1;transition:all 1.5s ease;transform:translateY(0);position:absolute;left:50%;top:50%;translate:-50% -50%;white-space:nowrap;pointer-events:none;`;
+  layer.appendChild(el);
+  requestAnimationFrame(() => { el.style.opacity = '0'; el.style.transform = 'translateY(-40px)'; });
+  setTimeout(() => el.remove(), 1600);
+}
+
+// ── World restore (cross-fade) ──
 function updateWorldRestore() {
-  const bs = document.getElementById('battleStage');
-  if (!bs) return;
-  const c = correctCount;
-  let f;
-  if (c === 0)     f = 'grayscale(80%) brightness(0.6)';
-  else if (c <= 2) f = 'grayscale(65%) brightness(0.7)';
-  else if (c <= 4) f = 'grayscale(45%) brightness(0.8)';
-  else if (c <= 6) f = 'grayscale(25%) brightness(0.85)';
-  else if (c <= 8) f = 'grayscale(10%) brightness(0.95)';
-  else             f = 'grayscale(0%) brightness(1.0)';
-  bs.style.filter = f;
+  const totalQ = 10;
+  const progress = Math.min(correctCount / totalQ, 1);
+  const alive = document.getElementById('scene-alive');
+  if (alive) alive.style.opacity = progress;
+  const fog = document.getElementById('scene-fog');
+  if (fog) {
+    fog.style.opacity = Math.max(0.1, 0.8 - progress * 0.7);
+    fog.style.transform = 'scale(' + Math.max(0.5, 1 - progress * 0.5) + ')';
+  }
 }
 
 // ── Energy bottle + restore bar ──
@@ -2502,99 +2588,58 @@ function resetEnergyBottle() {
   if (rPct)  rPct.textContent = '0%';
 }
 
-// ── Monster scale ──
-function updateMonScale() {
-  const ms = document.getElementById('monSprite');
-  if (ms) ms.style.transform = `scale(${monScale})`;
-}
+function updateMonScale() { /* monSprite removed — fog scale handled by updateWorldRestore */ }
 
 // ── Correct animations ──
-function showStarDrop() {
-  const bottle = document.getElementById('energy-bottle');
-  if (!bottle) return;
-  const rect = bottle.getBoundingClientRect();
-  const span = document.createElement('span');
-  span.textContent = '⭐';
-  span.style.cssText = `position:fixed;left:${rect.left + rect.width/2 - 10}px;top:${rect.top - 30}px;font-size:20px;z-index:500;pointer-events:none;opacity:1;transition:transform 0.6s ease,opacity 0.6s ease;`;
-  document.body.appendChild(span);
-  requestAnimationFrame(() => { span.style.transform = 'translateY(40px)'; span.style.opacity = '0'; });
-  setTimeout(() => span.remove(), 700);
-}
+function showStarDrop() { /* replaced by spawnParticles */ }
 
-function showRestoreFloat() {
-  const bs = document.getElementById('battleStage');
-  if (!bs) return;
-  const emojis = RESTORE_EMOJIS[getPlanetType(curId)] || ['✨'];
-  const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-  const span = document.createElement('span');
-  span.textContent = emoji;
-  span.style.cssText = `position:absolute;font-size:28px;z-index:30;pointer-events:none;left:${15+Math.random()*60}%;bottom:35%;opacity:1;transition:transform 1.2s ease,opacity 1.2s ease;`;
-  bs.appendChild(span);
-  requestAnimationFrame(() => { span.style.transform = 'translateY(-60px) scale(1.3)'; span.style.opacity = '0'; });
-  setTimeout(() => span.remove(), 1300);
-}
+function showRestoreFloat() { /* replaced by spawnParticles + showSceneText */ }
 
 const GAME_ENCOURAGE_MSGS = ['答對了！','完美！','能量正在恢復！','太厲害了！','就是這樣！'];
 function showEncourageText() {
-  const el = document.createElement('div');
-  el.textContent = GAME_ENCOURAGE_MSGS[Math.floor(Math.random() * GAME_ENCOURAGE_MSGS.length)];
-  el.style.cssText = `position:fixed;left:50%;top:62%;transform:translateX(-50%);color:#f8d000;font-size:15px;font-weight:bold;font-family:'Noto Sans TC',sans-serif;z-index:200;pointer-events:none;opacity:1;white-space:nowrap;text-shadow:0 0 10px #f8d000;transition:transform 1.5s ease,opacity 1.5s ease;`;
-  document.body.appendChild(el);
-  requestAnimationFrame(() => { el.style.transform = 'translateX(-50%) translateY(-30px)'; el.style.opacity = '0'; });
-  setTimeout(() => el.remove(), 1600);
+  showSceneText(encourageTexts[Math.floor(Math.random() * encourageTexts.length)]);
 }
 
 function showHeroGlow() {
-  const img = document.querySelector('#heroSprite img');
-  if (!img) return;
-  img.style.transition = 'filter 0.1s ease';
-  img.style.filter = 'brightness(1.5) drop-shadow(0 0 10px gold)';
-  setTimeout(() => { img.style.filter = ''; }, 400);
+  const hero = document.getElementById('scene-hero');
+  if (!hero) return;
+  hero.style.filter = 'brightness(1.6) drop-shadow(0 0 12px gold)';
+  setTimeout(() => { hero.style.filter = ''; }, 500);
 }
 
 // ── Wrong animations ──
 const COMFORT_MSGS = ['沒關係！','慢慢來！','深呼吸，你可以的！','再試一次！'];
 function showComfortText() {
-  const el = document.createElement('div');
-  el.textContent = COMFORT_MSGS[Math.floor(Math.random() * COMFORT_MSGS.length)];
-  el.style.cssText = `position:fixed;left:50%;top:62%;transform:translateX(-50%);color:#fff;font-size:14px;font-family:'Noto Sans TC',sans-serif;z-index:200;pointer-events:none;opacity:1;white-space:nowrap;transition:transform 1.5s ease,opacity 1.5s ease;`;
-  document.body.appendChild(el);
-  requestAnimationFrame(() => { el.style.transform = 'translateX(-50%) translateY(-30px)'; el.style.opacity = '0'; });
-  setTimeout(() => el.remove(), 1600);
+  showSceneText(comfortTexts[Math.floor(Math.random() * comfortTexts.length)], '#FFFFFF');
 }
 
 function showWrongFogEffect() {
-  const ms = document.getElementById('monSprite');
-  const bs = document.getElementById('battleStage');
-  if (!ms || !bs) return;
-  ms.style.transition = 'transform 0.15s ease';
-  ms.style.transform = `scale(${monScale * 1.05})`;
-  setTimeout(() => { ms.style.transform = `scale(${monScale})`; }, 300);
-  const fog = document.createElement('div');
-  fog.style.cssText = `position:absolute;right:12%;bottom:28%;width:60px;height:60px;border-radius:50%;background:rgba(150,0,255,0.45);transform:scale(0);opacity:0.5;transition:transform 0.8s ease,opacity 0.8s ease;z-index:35;pointer-events:none;`;
-  bs.appendChild(fog);
-  requestAnimationFrame(() => { fog.style.transform = 'scale(1.5)'; fog.style.opacity = '0'; });
-  setTimeout(() => fog.remove(), 900);
+  const fog = document.getElementById('scene-fog');
+  if (!fog) return;
+  const origTransform = fog.style.transform;
+  fog.style.transition = 'transform 0.15s ease';
+  fog.style.transform = (origTransform || 'scale(1)').replace(/scale\([^)]+\)/, '') + ' scale(1.15)';
+  setTimeout(() => {
+    fog.style.transition = 'opacity 0.5s ease,transform 0.3s ease';
+    fog.style.transform = origTransform || '';
+  }, 200);
+  // purple pulse overlay on scene
+  const sa = document.getElementById('scene-area');
+  if (sa) {
+    const pulse = document.createElement('div');
+    pulse.style.cssText = 'position:absolute;inset:0;border-radius:8px;background:rgba(150,0,255,0.25);opacity:0;transition:opacity 0.3s ease;z-index:7;pointer-events:none;';
+    sa.appendChild(pulse);
+    requestAnimationFrame(() => { pulse.style.opacity = '1'; });
+    setTimeout(() => { pulse.style.opacity = '0'; setTimeout(() => pulse.remove(), 350); }, 200);
+  }
 }
 
 // ── Combo ──
-const COMBO_CFG = {
-  3:  { text: '3 連擊！',                          color: '#ff9944', size: '22px' },
-  5:  { text: '5 連擊！迷霧正在退散！',             color: '#ffd700', size: '26px' },
-  7:  { text: '7 連擊！！',                         color: '#ffd700', size: '30px' },
-  10: { text: '10 連擊！！！你就是傳說中的守護者！', color: '#ffd700', size: '34px', blink: true },
-};
-
 function showComboPopup(combo) {
-  const cfg = COMBO_CFG[combo];
-  if (!cfg) return;
-  const el = document.createElement('div');
-  el.textContent = cfg.text;
-  el.style.cssText = `position:fixed;left:50%;top:40%;transform:translateX(-50%) scale(0);color:${cfg.color};font-size:${cfg.size};font-weight:900;font-family:'Noto Sans TC',sans-serif;z-index:300;pointer-events:none;white-space:nowrap;text-shadow:0 0 20px ${cfg.color};transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1),opacity 0.4s;`;
-  if (cfg.blink) el.style.animation = 'tFlash 0.5s ease-in-out infinite alternate';
-  document.body.appendChild(el);
-  requestAnimationFrame(() => { el.style.transform = 'translateX(-50%) scale(1)'; });
-  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 400); }, 1500);
+  if (combo === 3)  { showSceneText('🔥 3 連擊！', '#FFA500');  spawnParticles(20); }
+  else if (combo === 5)  { showSceneText('🔥🔥 5 連擊！', '#FFD700');  spawnParticles(30); }
+  else if (combo === 7)  { showSceneText('🔥🔥🔥 7 連擊！！', '#FFD700'); spawnParticles(40); }
+  else if (combo === 10) { showSceneText('⭐ 10 連擊！傳說中的守護者！', '#FFD700'); spawnParticles(60); }
 }
 
 // ── Spirit awakening ──
@@ -3037,10 +3082,19 @@ function startLevel(id){
   correctCount = 0;
   comboCount = 0;
   monScale = 1.0;
+  particles = [];
+  particleAnimId = null;
   runCountdown(['3','2','1','GO!'], async ()=>{
     goTo('s-game');
     setupGame();
-    initFire();
+    // Reset scene
+    const alive = document.getElementById('scene-alive');
+    const fog   = document.getElementById('scene-fog');
+    const pcanv = document.getElementById('particle-canvas');
+    if (alive) { alive.style.transition='none'; alive.style.opacity='0'; setTimeout(()=>{ alive.style.transition='opacity 0.8s ease'; },50); }
+    if (fog)   { fog.style.transition='none'; fog.style.opacity='0.8'; fog.style.transform='scale(1)'; setTimeout(()=>{ fog.style.transition='opacity 0.5s ease,transform 0.3s ease'; },50); }
+    if (pcanv) { const ctx=pcanv.getContext('2d'); ctx.clearRect(0,0,pcanv.width,pcanv.height); }
+    setTimeout(initParticleCanvas, 100);
     updateWorldRestore();
     resetEnergyBottle();
     const dlg=LEVEL_DIALOGS[id];
@@ -3066,17 +3120,9 @@ function runCountdown(steps,done){
 function setupGame(){
   const lv=LEVELS[curId];
   document.getElementById('hudTag').textContent=`關卡 ${curId}　${lv.name}`;
-  document.getElementById('monLabel').textContent='混沌迷霧';
   const gender = localStorage.getItem('player_gender');
-  const heroSrc = gender === 'girl' ? 'images/girl.jpg' : 'images/boy.jpg';
-  const hs=document.getElementById('heroSprite');
-  hs.innerHTML=`<img src="${heroSrc}" style="width:100px;height:100px;object-fit:cover;border-radius:50%;display:block;transition:filter 0.4s ease;mix-blend-mode:multiply;background:transparent;" onerror="this.style.display='none'">`;
-  hs.dataset.char='hero';
-  const ms=document.getElementById('monSprite');
-  ms.innerHTML=`<img src="images/fog.jpg" style="width:100px;height:100px;object-fit:cover;border-radius:50%;opacity:0.9;display:block;mix-blend-mode:multiply;background:transparent;">`;
-  ms.dataset.char='fog';
-  ms.style.transition='transform 0.3s ease';
-  ms.style.transform=`scale(${monScale})`;
+  const hero = document.getElementById('scene-hero');
+  if (hero) hero.src = gender === 'girl' ? 'images/girl.jpg' : 'images/boy.jpg';
   updateHUD();
 }
 
@@ -3145,14 +3191,11 @@ function submit(){
     logAnswer(curId, q.text, num, true, Math.round(secs*1000));
     updateDailyTask('correct', 1);
     GS.monHp--;
-    monScale = Math.max(0.5, monScale - 0.05);
     updateWorldRestore();
     updateEnergyBottle();
-    updateMonScale();
-    showStarDrop();
-    showRestoreFloat();
-    showEncourageText();
+    spawnParticles(15);
     showHeroGlow();
+    showEncourageText();
     showComboPopup(comboCount);
     clearInterval(GS.qTimerId);
     showScoreFloat(pts, secs);
@@ -3193,7 +3236,8 @@ function submit(){
 }
 
 function showScoreFloat(pts, secs){
-  const stage=document.getElementById('battleStage');
+  const stage=document.getElementById('scene-area');
+  if(!stage) return;
   const old=stage.querySelector('.score-float');
   if(old) old.remove();
   const lv=LEVELS[curId];
@@ -3210,35 +3254,15 @@ function showScoreFloat(pts, secs){
 }
 
 function doCorrectAnim(cb){
-  const hs=document.getElementById('heroSprite');
-  const ms=document.getElementById('monSprite');
   const fo=document.getElementById('sfo');
-  hs.classList.add('anim-hero-atk');
-  setTimeout(()=>{
-    hs.classList.remove('anim-hero-atk');
-    ms.classList.add('anim-flash-hit','anim-shake');
-    fo.className='screen-flash-overlay sfo-yellow';
-    setTimeout(()=>{
-      ms.classList.remove('anim-flash-hit','anim-shake');
-      ms.style.transform=`scale(${monScale})`;
-      fo.className='screen-flash-overlay';
-      cb();
-    },320);
-  },250);
+  fo.className='screen-flash-overlay sfo-yellow';
+  setTimeout(()=>{ fo.className='screen-flash-overlay'; cb(); }, 300);
 }
 
 function doWrongAnim(cb){
-  const hs=document.getElementById('heroSprite');
-  const ms=document.getElementById('monSprite');
   const fo=document.getElementById('sfo');
-  ms.classList.add('anim-mon-atk');
-  setTimeout(()=>{
-    ms.classList.remove('anim-mon-atk');
-    ms.style.transform=`scale(${monScale})`;
-    hs.classList.add('anim-flash-hurt','anim-shake');
-    fo.className='screen-flash-overlay sfo-red';
-    setTimeout(()=>{hs.classList.remove('anim-flash-hurt','anim-shake');fo.className='screen-flash-overlay';cb();},320);
-  },250);
+  fo.className='screen-flash-overlay sfo-red';
+  setTimeout(()=>{ fo.className='screen-flash-overlay'; cb(); }, 300);
 }
 
 // ═══════════════════════════════════════════════
@@ -3321,21 +3345,33 @@ function endGame(result){
       }
     };
 
+    // Victory effect: fog vanishes, scene fully restored, particle burst
+    const doVictoryEffect = () => new Promise(resolve => {
+      const fog2  = document.getElementById('scene-fog');
+      const alive2 = document.getElementById('scene-alive');
+      if (fog2)  { fog2.style.transition='opacity 1s ease,transform 1s ease'; fog2.style.opacity='0'; fog2.style.transform='scale(0)'; }
+      if (alive2){ alive2.style.transition='opacity 0.8s ease'; alive2.style.opacity='1'; }
+      spawnParticles(50);
+      showSceneText('迷霧消散了！', '#FFD700');
+      setTimeout(resolve, 2000);
+    });
+
     // Award puzzle piece (accuracy ≥ 60%, only if planet has this level)
     const accuracy = GS.totalCorrect / 10;
     const pPlanetId = LEVEL_PLANET[curId];
-    let puzzleChain = Promise.resolve();
-    if(pPlanetId && accuracy >= 0.6){
-      const isNew = PZ.addPiece(pPlanetId, curId);
-      const pCfg = PLANET_PUZZLES[pPlanetId];
-      puzzleChain = showPuzzlePieceAnim(isNew, pCfg);
-    }
+    const getPuzzleChain = () => {
+      if(pPlanetId && accuracy >= 0.6){
+        const isNew = PZ.addPiece(pPlanetId, curId);
+        return showPuzzlePieceAnim(isNew, PLANET_PUZZLES[pPlanetId]);
+      }
+      return Promise.resolve();
+    };
 
     // 第 8 關通關先播精靈甦醒動畫和結局對話，再顯示 s-win
     if(curId==='8'){
-      puzzleChain.then(()=>showSpiritAwaken('images/phoenix.jpg','焰羽甦醒')).then(()=>showDialog(WIN8_DIALOG)).then(doShowWin);
+      doVictoryEffect().then(getPuzzleChain).then(()=>showSpiritAwaken('images/phoenix.jpg','焰羽甦醒')).then(()=>showDialog(WIN8_DIALOG)).then(doShowWin);
     } else {
-      puzzleChain.then(doShowWin);
+      doVictoryEffect().then(getPuzzleChain).then(doShowWin);
     }
 
   } else {
