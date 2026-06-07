@@ -594,6 +594,10 @@ select option{background:#1a1a3e;color:#fff}
 .dialog-arrow.visible{opacity:1}
 @keyframes dlgBlink{0%,100%{opacity:0.2}50%{opacity:1}}
 @keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes puzzlePulse{0%,100%{box-shadow:0 0 10px rgba(255,215,0,0.4)}50%{box-shadow:0 0 24px rgba(255,215,0,0.85),0 0 48px rgba(255,150,0,0.4)}}
+.puzzle-cell{width:100%;aspect-ratio:1;border-radius:4px;overflow:hidden;background:#0d0020;display:flex;align-items:center;justify-content:center;font-size:16px;border:1px solid rgba(255,255,255,0.07);}
+.puzzle-cell.got{border-color:rgba(255,215,0,0.25);}
+.puzzle-grid-wrap.complete .puzzle-cell{animation:puzzlePulse 2s ease-in-out infinite;border-color:rgba(255,215,0,0.5);}
 @keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-80px) scale(1.5)}}
 .battle-stage{filter:grayscale(80%) brightness(0.6);transition:filter 0.8s ease}
 @media(max-width:500px){
@@ -818,6 +822,15 @@ select option{background:#1a1a3e;color:#fff}
     <div class="lvl-prog-label" id="lvlProgLabel"></div>
     <div class="lvl-prog-bar"><div class="lvl-prog-fill" id="lvlProgFill"></div></div>
   </div>
+  <div id="puzzle-preview" style="margin:8px 16px 4px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,215,0,0.3);border-radius:12px;padding:10px 12px;display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <span style="color:#f8d000;font-size:12px;font-weight:700;">守護精靈拼圖</span>
+      <span id="puzzle-count" style="color:#aaa;font-size:11px;">0/8 片</span>
+    </div>
+    <div id="puzzle-grid" class="puzzle-grid-wrap" style="display:grid;grid-template-columns:repeat(4,1fr);gap:3px;max-width:220px;margin:0 auto;"></div>
+    <div id="puzzle-complete-text" style="color:#aaa;font-size:11px;text-align:center;margin-top:6px;"></div>
+  </div>
+
   <div class="levels-list" id="levelsList"></div>
 </div>
 
@@ -988,6 +1001,7 @@ select option{background:#1a1a3e;color:#fff}
   </div>
   <div class="stars-total-row" id="starsTotalRow"></div>
   <div class="treasures-grid" id="treasuresGrid"></div>
+  <div id="spirit-gallery" style="padding:0 16px 24px;"></div>
 </div>
 
 <!-- ── S-Shop ── -->
@@ -2713,6 +2727,182 @@ function getTitle() {
 }
 
 // ═══════════════════════════════════════════════
+// PUZZLE SYSTEM
+// ═══════════════════════════════════════════════
+const PLANET_PUZZLES = {
+  'burning_star': {
+    name: '燃燒星',
+    levels: ['1','2','3','4','5','6','7','8'],
+    spiritImg: 'images/phoenix.jpg',
+    spiritName: '焰羽精靈',
+  },
+};
+
+// Derive level→planet lookup
+const LEVEL_PLANET = {};
+for(const [pid, cfg] of Object.entries(PLANET_PUZZLES)){
+  cfg.levels.forEach(lid => LEVEL_PLANET[lid] = pid);
+}
+
+const PZ = {
+  _key: 'puzzle_progress',
+  _data: null,
+  _load(){
+    if(!this._data){
+      try{ this._data = JSON.parse(localStorage.getItem(this._key)||'{}'); }
+      catch(e){ this._data = {}; }
+    }
+    return this._data;
+  },
+  _save(){ localStorage.setItem(this._key, JSON.stringify(this._data)); },
+  hasPiece(planetId, levelId){
+    const d = this._load();
+    return !!(d[planetId] && d[planetId][levelId]);
+  },
+  addPiece(planetId, levelId){
+    const d = this._load();
+    if(!d[planetId]) d[planetId] = {};
+    if(!d[planetId][levelId]){
+      d[planetId][levelId] = 1;
+      this._save();
+      return true; // newly earned
+    }
+    return false; // already had it
+  },
+  countForPlanet(planetId){
+    const d = this._load();
+    if(!d[planetId]) return 0;
+    return Object.keys(d[planetId]).length;
+  },
+  allComplete(planetId){
+    const cfg = PLANET_PUZZLES[planetId];
+    if(!cfg) return false;
+    return this.countForPlanet(planetId) >= cfg.levels.length;
+  },
+};
+
+function renderPuzzle(planetId, targetGridId, targetCountId, targetCompleteId){
+  const cfg = PLANET_PUZZLES[planetId];
+  if(!cfg) return;
+  const levels = cfg.levels;
+  const total = levels.length;
+  const cols = 4;
+  const rows = Math.ceil(total / cols);
+  const grid = document.getElementById(targetGridId);
+  const countEl = document.getElementById(targetCountId);
+  const completeEl = document.getElementById(targetCompleteId);
+  if(!grid) return;
+  const got = PZ.countForPlanet(planetId);
+
+  // Set grid wrapper class for pulse animation when complete
+  const wrap = grid.closest ? grid : grid;
+  if(PZ.allComplete(planetId)){
+    grid.classList.add('complete');
+  } else {
+    grid.classList.remove('complete');
+  }
+
+  grid.innerHTML = '';
+  grid.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+
+  const iw = 100/cols;
+  const ih = 100/rows;
+
+  levels.forEach((lid, idx) => {
+    const hasPiece = PZ.hasPiece(planetId, lid);
+    const cell = document.createElement('div');
+    cell.className = 'puzzle-cell' + (hasPiece ? ' got' : '');
+
+    const col = idx % cols;
+    const row = Math.floor(idx / cols);
+
+    if(hasPiece){
+      cell.style.cssText = `background-image:url('${cfg.spiritImg}');background-size:${cols*100}% ${rows*100}%;background-position:${col*(100/(cols-1))}% ${row*(100/(rows-1))}%;`;
+    } else {
+      cell.innerHTML = '<span style="opacity:0.25;user-select:none">🧩</span>';
+    }
+    grid.appendChild(cell);
+  });
+
+  if(countEl) countEl.textContent = `${got}/${total} 片`;
+  if(completeEl){
+    if(PZ.allComplete(planetId)){
+      completeEl.textContent = '✨ 精靈已完整甦醒！';
+      completeEl.style.color = '#f8d000';
+    } else {
+      completeEl.textContent = '';
+    }
+  }
+}
+
+function renderSpiritGallery(){
+  const el = document.getElementById('spirit-gallery');
+  if(!el) return;
+  let html = '<div style="color:#f8d000;font-size:14px;font-weight:700;margin-bottom:12px;text-align:center;">守護精靈圖鑑</div>';
+  for(const [pid, cfg] of Object.entries(PLANET_PUZZLES)){
+    const got = PZ.countForPlanet(pid);
+    const total = cfg.levels.length;
+    const complete = PZ.allComplete(pid);
+    const cols = 4;
+    const rows = Math.ceil(total/cols);
+
+    html += `<div style="background:rgba(0,0,0,0.35);border:1px solid rgba(255,215,0,${complete?'0.55':'0.2'});border-radius:12px;padding:12px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <span style="color:#ddd;font-size:13px;">${cfg.name}　<span style="color:#888;font-size:11px;">${cfg.spiritName}</span></span>
+        <span style="color:${complete?'#f8d000':'#aaa'};font-size:11px;">${got}/${total} 片</span>
+      </div>
+      <div id="gallery-grid-${pid}" class="puzzle-grid-wrap" style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:3px;max-width:220px;margin:0 auto;"></div>
+      ${complete?'<div style="color:#f8d000;font-size:11px;text-align:center;margin-top:6px;">✨ 精靈已完整甦醒！</div>':''}
+    </div>`;
+  }
+  el.innerHTML = html;
+
+  for(const [pid, cfg] of Object.entries(PLANET_PUZZLES)){
+    const cols = 4;
+    const rows = Math.ceil(cfg.levels.length/cols);
+    const grid = document.getElementById(`gallery-grid-${pid}`);
+    if(!grid) continue;
+    if(PZ.allComplete(pid)) grid.classList.add('complete');
+    cfg.levels.forEach((lid, idx) => {
+      const hasPiece = PZ.hasPiece(pid, lid);
+      const cell = document.createElement('div');
+      cell.className = 'puzzle-cell' + (hasPiece ? ' got' : '');
+      const col = idx % cols;
+      const row = Math.floor(idx / cols);
+      if(hasPiece){
+        cell.style.cssText = `background-image:url('${cfg.spiritImg}');background-size:${cols*100}% ${rows*100}%;background-position:${col*(100/(cols-1))}% ${row*(100/(rows-1))}%;`;
+      } else {
+        cell.innerHTML = '<span style="opacity:0.25;user-select:none">🧩</span>';
+      }
+      grid.appendChild(cell);
+    });
+  }
+}
+
+function showPuzzlePieceAnim(isNewPiece, planetCfg){
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9000;pointer-events:none;';
+    const box = document.createElement('div');
+    box.style.cssText = 'background:rgba(10,0,30,0.92);border:2px solid rgba(255,215,0,0.7);border-radius:18px;padding:24px 32px;text-align:center;animation:fadeInUp 0.4s ease;';
+    if(isNewPiece){
+      box.innerHTML = `<div style="font-size:48px;margin-bottom:8px;">🧩</div>
+        <div style="color:#f8d000;font-size:16px;font-weight:700;margin-bottom:4px;">獲得拼圖碎片！</div>
+        <div style="color:#ddd;font-size:13px;">${planetCfg.spiritName} 正在甦醒…</div>`;
+    } else {
+      box.innerHTML = `<div style="font-size:36px;margin-bottom:8px;">⭐</div>
+        <div style="color:#aaa;font-size:14px;">繼續加油！</div>`;
+    }
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    setTimeout(() => {
+      overlay.style.transition = 'opacity 0.4s';
+      overlay.style.opacity = '0';
+      setTimeout(() => { overlay.remove(); resolve(); }, 420);
+    }, isNewPiece ? 2000 : 1200);
+  });
+}
+
 // DIALOG SYSTEM
 // ═══════════════════════════════════════════════
 const LEVEL_DIALOGS = {
@@ -3130,11 +3320,22 @@ function endGame(result){
         },2000);
       }
     };
+
+    // Award puzzle piece (accuracy ≥ 60%, only if planet has this level)
+    const accuracy = GS.totalCorrect / 10;
+    const pPlanetId = LEVEL_PLANET[curId];
+    let puzzleChain = Promise.resolve();
+    if(pPlanetId && accuracy >= 0.6){
+      const isNew = PZ.addPiece(pPlanetId, curId);
+      const pCfg = PLANET_PUZZLES[pPlanetId];
+      puzzleChain = showPuzzlePieceAnim(isNew, pCfg);
+    }
+
     // 第 8 關通關先播精靈甦醒動畫和結局對話，再顯示 s-win
     if(curId==='8'){
-      showSpiritAwaken('images/phoenix.jpg','焰羽甦醒').then(()=>showDialog(WIN8_DIALOG)).then(doShowWin);
+      puzzleChain.then(()=>showSpiritAwaken('images/phoenix.jpg','焰羽甦醒')).then(()=>showDialog(WIN8_DIALOG)).then(doShowWin);
     } else {
-      doShowWin();
+      puzzleChain.then(doShowWin);
     }
 
   } else {
@@ -3309,6 +3510,18 @@ function renderLevelSelect(op){
     if(!locked) card.onclick=()=>startLevel(id);
     list.appendChild(card);
   }
+
+  // Puzzle preview for this operation's planet
+  const sampleId = op.ids[0];
+  const pid = LEVEL_PLANET[sampleId];
+  const ppEl = document.getElementById('puzzle-preview');
+  if(pid && ppEl){
+    ppEl.style.display = '';
+    renderPuzzle(pid, 'puzzle-grid', 'puzzle-count', 'puzzle-complete-text');
+  } else if(ppEl){
+    ppEl.style.display = 'none';
+  }
+
   goTo('s-levels');
 }
 
@@ -3328,6 +3541,7 @@ function renderCollection(){
       :`<div class="tsi">❓</div><div class="tsf">關卡 ${id}</div>`;
     g.appendChild(s);
   }
+  renderSpiritGallery();
 }
 
 // ═══════════════════════════════════════════════
