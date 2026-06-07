@@ -2475,6 +2475,7 @@ let comboCount = 0;
 let monScale = 1.0;
 let particles = [];
 let particleAnimId = null;
+let lastZone = '';
 
 function getPlanetType(id) {
   const n = parseInt(id);
@@ -2503,13 +2504,12 @@ class Particle {
     this.color = this._color();
   }
   _color() {
-    const n = parseInt(curId) || 1;
-    if (n <= 18) {
-      const c = ['#FFD700','#FFA500','#FF6347','#FFB347','#FFED4E'];
-      return c[Math.floor(Math.random() * c.length)];
-    }
-    const c = ['#00CED1','#48D1CC','#7FFFD4','#40E0D0','#00BFFF'];
-    return c[Math.floor(Math.random() * c.length)];
+    const zone = (SCENE_MAP[parseInt(curId)] || SCENE_MAP[1]).zone;
+    if (zone === '森林入口')  { const c=['#FFD700','#FFA500','#FF6347']; return c[Math.floor(Math.random()*c.length)]; }
+    if (zone === '燃燒溪谷')  { const c=['#FF4500','#FF6600','#FF8C00','#FFA07A']; return c[Math.floor(Math.random()*c.length)]; }
+    if (zone === '火焰深林')  { const c=['#FFD700','#FFED4E','#FFC107','#FFB347']; return c[Math.floor(Math.random()*c.length)]; }
+    if (zone === '鳳凰聖殿')  { const c=['#FFD700','#FFFFFF','#FFFACD','#FFE4B5']; return c[Math.floor(Math.random()*c.length)]; }
+    return '#FFD700';
   }
   update() {
     this.y += this.speedY;
@@ -2647,7 +2647,9 @@ function showRestoreFloat() { /* replaced by spawnParticles + showSceneText */ }
 
 const GAME_ENCOURAGE_MSGS = ['答對了！','完美！','能量正在恢復！','太厲害了！','就是這樣！'];
 function showEncourageText() {
-  showSceneText(encourageTexts[Math.floor(Math.random() * encourageTexts.length)]);
+  const zone = (SCENE_MAP[parseInt(curId)] || SCENE_MAP[1]).zone;
+  const pool = zoneEncourage[zone] || encourageTexts;
+  showSceneText(pool[Math.floor(Math.random() * pool.length)]);
 }
 
 function showHeroGlow() {
@@ -2822,6 +2824,52 @@ function getTitle() {
 }
 
 // ═══════════════════════════════════════════════
+// SCENE MAP
+// ═══════════════════════════════════════════════
+const SCENE_MAP = {
+  1:  { dead: 'images/fire_dead.jpg',        alive: 'images/fire_alive.jpg',        zone: '森林入口' },
+  2:  { dead: 'images/fire_dead.jpg',        alive: 'images/fire_alive.jpg',        zone: '森林入口' },
+  3:  { dead: 'images/fire_dead.jpg',        alive: 'images/fire_alive.jpg',        zone: '森林入口' },
+  4:  { dead: 'images/fire_dead.jpg',        alive: 'images/fire_alive.jpg',        zone: '森林入口' },
+  5:  { dead: 'images/fire_valley_dead.jpg', alive: 'images/fire_valley_alive.jpg', zone: '燃燒溪谷' },
+  6:  { dead: 'images/fire_valley_dead.jpg', alive: 'images/fire_valley_alive.jpg', zone: '燃燒溪谷' },
+  7:  { dead: 'images/fire_valley_dead.jpg', alive: 'images/fire_valley_alive.jpg', zone: '燃燒溪谷' },
+  8:  { dead: 'images/fire_valley_dead.jpg', alive: 'images/fire_valley_alive.jpg', zone: '燃燒溪谷' },
+  9:  { dead: 'images/fire_deep_dead.jpg',   alive: 'images/fire_deep_alive.jpg',   zone: '火焰深林' },
+  10: { dead: 'images/fire_deep_dead.jpg',   alive: 'images/fire_deep_alive.jpg',   zone: '火焰深林' },
+  11: { dead: 'images/fire_deep_dead.jpg',   alive: 'images/fire_deep_alive.jpg',   zone: '火焰深林' },
+  12: { dead: 'images/fire_deep_dead.jpg',   alive: 'images/fire_deep_alive.jpg',   zone: '火焰深林' },
+  13: { dead: 'images/fire_deep_dead.jpg',   alive: 'images/fire_deep_alive.jpg',   zone: '火焰深林' },
+  14: { dead: 'images/fire_temple_dead.jpg', alive: 'images/fire_temple_alive.jpg', zone: '鳳凰聖殿' },
+  15: { dead: 'images/fire_temple_dead.jpg', alive: 'images/fire_temple_alive.jpg', zone: '鳳凰聖殿' },
+  16: { dead: 'images/fire_temple_dead.jpg', alive: 'images/fire_temple_alive.jpg', zone: '鳳凰聖殿' },
+  17: { dead: 'images/fire_temple_dead.jpg', alive: 'images/fire_temple_alive.jpg', zone: '鳳凰聖殿' },
+  18: { dead: 'images/fire_temple_dead.jpg', alive: 'images/fire_temple_alive.jpg', zone: '鳳凰聖殿' },
+};
+
+const ZONE_DIALOGS = {
+  '燃燒溪谷': [
+    { speaker: '小星', img: 'images/nova.jpg', text: '我們要更深入了！前面是燃燒溪谷！' },
+    { speaker: '小星', img: 'images/nova.jpg', text: '這裡的河流曾經流著溫暖的岩漿，但現在全乾涸了……' },
+  ],
+  '火焰深林': [
+    { speaker: '小星', img: 'images/nova.jpg', text: '這裡是火焰深林——森林最茂密的地方！' },
+    { speaker: '小星', img: 'images/nova.jpg', text: '以前這裡的每一棵樹都會開出火焰花，像星星一樣閃耀。' },
+  ],
+  '鳳凰聖殿': [
+    { speaker: '小星', img: 'images/nova.jpg', text: '就是這裡了——鳳凰聖殿！' },
+    { speaker: '小星', img: 'images/nova.jpg', text: '焰羽就沉睡在這座聖殿深處……我能感覺到牠的心跳！' },
+    { speaker: '小星', img: 'images/nova.jpg', text: '最後一段路了，加油！' },
+  ],
+};
+
+const zoneEncourage = {
+  '森林入口': ['嫩芽冒出來了！', '森林在甦醒！', '答對了！'],
+  '燃燒溪谷': ['溪水開始流動了！', '岩漿重新發光了！', '太棒了！'],
+  '火焰深林': ['火焰花綻放了！', '整棵樹都亮了！', '完美！'],
+  '鳳凰聖殿': ['聖殿在發光！', '焰羽的心跳更強了！', '就是這樣！'],
+};
+
 // PUZZLE SYSTEM
 // ═══════════════════════════════════════════════
 const PLANET_PUZZLES = {
@@ -3124,6 +3172,14 @@ function startLevel(id){
     wrongTotal:0,   // 整關累計答錯次數（扣命用）
     totalCorrect:0, starsEarned:0,
   };
+  // 場景圖片（倒數前先設定好）
+  const sceneData = SCENE_MAP[parseInt(id)] || SCENE_MAP[1];
+  const newZone = sceneData.zone;
+  const deadEl = document.getElementById('scene-dead');
+  const aliveEl = document.getElementById('scene-alive');
+  if (deadEl) deadEl.src = sceneData.dead;
+  if (aliveEl) { aliveEl.src = sceneData.alive; aliveEl.style.opacity = '0'; }
+
   // Intro
   document.getElementById('introTag').textContent=`關卡 ${id}　${lv.name}`;
   document.getElementById('introMonName').textContent=lv.mnm;
@@ -3146,6 +3202,11 @@ function startLevel(id){
     setTimeout(initParticleCanvas, 100);
     updateWorldRestore();
     resetEnergyBottle();
+    // 區域過場對話（進入新區域時）
+    if (lastZone && newZone !== lastZone && ZONE_DIALOGS[newZone]) {
+      await showDialog(ZONE_DIALOGS[newZone]);
+    }
+    lastZone = newZone;
     const dlg=LEVEL_DIALOGS[id];
     if(dlg) await showDialog(dlg);
     startLvTimer();
@@ -3511,6 +3572,7 @@ function refreshStarsDisplay(){
 
 function goTo(id){
   if(_celebTimeout){clearTimeout(_celebTimeout);_celebTimeout=null;}
+  if(id==='s-title'||id==='s-world'||id==='s-planet') lastZone='';
   const cur=document.querySelector('.screen.active');
   const next=document.getElementById(id);
   if(!next) return;
