@@ -760,7 +760,10 @@ select option{background:#1a1a3e;color:#fff}
     </div>
 
     <!-- 英雄展示 -->
-    <div id="titleHeroWrap" style="margin-bottom:28px;filter:drop-shadow(0 0 20px rgba(255,215,0,0.3));"></div>
+    <div id="titleHeroWrap" style="margin-bottom:28px;display:flex;flex-direction:column;align-items:center;gap:8px;animation:titleFloat 2.5s ease-in-out infinite;">
+      <img id="title-hero-img" src="images/boy.jpg" style="width:120px;height:120px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,215,0,0.4);box-shadow:0 0 20px rgba(255,215,0,0.3);">
+      <div id="title-hero-name" style="color:#f8d000;font-size:14px;font-weight:700;letter-spacing:2px;text-shadow:0 0 10px rgba(255,215,0,0.5);min-height:20px;"></div>
+    </div>
 
     <!-- 主要按鈕：開始冒險 -->
     <button onclick="unlockAudio();goTo('s-planet')"
@@ -2588,9 +2591,12 @@ function showSceneText(text, color) {
   const el = document.createElement('div');
   const c = color || '#FFD700';
   el.textContent = text;
-  el.style.cssText = `color:${c};font-size:18px;font-weight:bold;font-family:'Noto Sans TC',sans-serif;text-shadow:0 0 10px rgba(0,0,0,0.8),0 0 20px ${c};opacity:1;transition:all 1.5s ease;transform:translateY(0);position:absolute;left:50%;top:50%;translate:-50% -50%;white-space:nowrap;pointer-events:none;`;
+  el.style.cssText = `color:${c};font-size:18px;font-weight:bold;font-family:'Noto Sans TC',sans-serif;text-shadow:0 0 10px rgba(0,0,0,0.8),0 0 20px ${c};opacity:1;transition:opacity 1.5s ease,transform 1.5s ease;transform:translate(-50%,-50%) translateY(0);position:absolute;left:50%;top:50%;z-index:100;white-space:nowrap;pointer-events:none;`;
   layer.appendChild(el);
-  requestAnimationFrame(() => { el.style.opacity = '0'; el.style.transform = 'translateY(-40px)'; });
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translate(-50%,-50%) translateY(-40px)';
+  }));
   setTimeout(() => el.remove(), 1600);
 }
 
@@ -3203,7 +3209,8 @@ function startLevel(id){
     updateWorldRestore();
     resetEnergyBottle();
     // 區域過場對話（進入新區域時）
-    if (lastZone && newZone !== lastZone && ZONE_DIALOGS[newZone]) {
+    console.log('Zone check:', lastZone, '->', newZone, 'dialog exists:', !!(ZONE_DIALOGS && ZONE_DIALOGS[newZone]));
+    if (newZone !== lastZone && ZONE_DIALOGS[newZone]) {
       await showDialog(ZONE_DIALOGS[newZone]);
     }
     lastZone = newZone;
@@ -3572,7 +3579,7 @@ function refreshStarsDisplay(){
 
 function goTo(id){
   if(_celebTimeout){clearTimeout(_celebTimeout);_celebTimeout=null;}
-  if(id==='s-title'||id==='s-world'||id==='s-planet') lastZone='';
+  if(id==='s-planet') lastZone='';
   const cur=document.querySelector('.screen.active');
   const next=document.getElementById(id);
   if(!next) return;
@@ -3581,6 +3588,7 @@ function goTo(id){
     next.style.opacity='0';
     next.classList.add('active');
     requestAnimationFrame(()=>requestAnimationFrame(()=>{next.style.opacity='';}) );
+    if(id==='s-title') updateTitleHero();
     if(id==='s-world') renderWorld();
     if(id==='s-collection') renderCollection();
     if(id==='s-planet') refreshStarsDisplay();
@@ -5228,10 +5236,22 @@ async function adminLoadRedemptions() {
 // ═══════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════
+function updateTitleHero() {
+  const gender = localStorage.getItem('player_gender');
+  const heroEl = document.getElementById('title-hero-img');
+  if (heroEl) {
+    heroEl.src = gender === 'girl' ? 'images/girl.jpg' : 'images/boy.jpg';
+  }
+  const nickname = localStorage.getItem('player_nickname');
+  const nameEl = document.getElementById('title-hero-name');
+  if (nameEl) {
+    nameEl.textContent = nickname || '';
+  }
+}
+
 window.addEventListener('DOMContentLoaded',()=>{
   initStars();
-  const th=document.getElementById('titleHeroWrap');
-  th.innerHTML=heroSVG(3);
+  updateTitleHero();
   renderWorld();
   refreshStarsDisplay();
   initAuth();
@@ -5338,6 +5358,8 @@ async function afterLogin() {
       ? `💌 家長留言 <span style="background:#f44336;color:#fff;font-size:11px;padding:1px 6px;border-radius:10px;margin-left:4px;">${unreadCount}</span>`
       : '💌 家長留言';
   }
+
+  updateTitleHero();
 
   if (hasLinkedChildren) {
     showModeSelect();
