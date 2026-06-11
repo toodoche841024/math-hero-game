@@ -1601,6 +1601,16 @@ async function initAuth() {
     return;
   }
 
+  // Platform child auto-login: tokens passed via query params
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('type') === 'child' && urlParams.get('at')) {
+    await db.auth.setSession({
+      access_token: urlParams.get('at'),
+      refresh_token: urlParams.get('rt') || ''
+    });
+    window.history.replaceState(null, '', window.location.pathname);
+  }
+
   const { data: { session } } = await db.auth.getSession();
   if (session) {
     currentUser = session.user;
