@@ -3219,7 +3219,6 @@ function startLevel(id){
     updateWorldRestore();
     resetEnergyBottle();
     // 區域過場對話（進入新區域時）
-    console.log('Zone check:', lastZone, '->', newZone, 'dialog exists:', !!(ZONE_DIALOGS && ZONE_DIALOGS[newZone]));
     if (newZone !== lastZone && ZONE_DIALOGS[newZone]) {
       await showDialog(ZONE_DIALOGS[newZone]);
     }
@@ -3521,7 +3520,8 @@ function showCelebration(id, afterCb){
   const data=CELEB_DATA[id];
   if(!data){afterCb();return;}
   _celebWinCb=afterCb;
-  document.getElementById('celebHero').innerHTML=heroSVG(3);
+  const _celebGender=localStorage.getItem('player_gender');
+  document.getElementById('celebHero').innerHTML='<img src="'+(_celebGender==='girl'?'images/girl.jpg':'images/boy.jpg')+'" style="width:130px;height:130px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,215,0,0.6);box-shadow:0 0 18px rgba(255,215,0,0.8);">';
   document.getElementById('celebTitle').textContent=data.title;
   document.getElementById('celebUnlock').textContent=data.unlock;
   const btn=document.getElementById('celebContinue');
