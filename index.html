@@ -56,6 +56,12 @@ body{width:100%;height:100%;min-height:-webkit-fill-available;overflow:hidden;
   background:radial-gradient(circle at 35% 35%,#ff9a3c,#ff3300,#8b0000);
   box-shadow:0 0 30px #ff6600,0 0 60px #ff330055;animation:pPulse 2s ease-in-out infinite}
 .planet-locked .planet-orb{background:#222;filter:blur(2px);box-shadow:none;color:#555}
+.planet-ocean .planet-orb{
+  background:radial-gradient(circle at 35% 35%,#7fe3ff,#1e88e5,#0a2a5e);
+  box-shadow:0 0 30px #2aa6ff,0 0 60px #1e88e555;animation:pPulse 2s ease-in-out infinite}
+.planet-card.locked-planet{cursor:not-allowed}
+.planet-card.locked-planet .planet-orb{filter:grayscale(1) brightness(0.5);animation:none;box-shadow:none}
+.planet-card.locked-planet:hover{transform:none}
 @keyframes pPulse{0%,100%{box-shadow:0 0 25px #ff6600,0 0 50px #ff330044}
   50%{box-shadow:0 0 45px #ff9900,0 0 90px #ff660033}}
 .planet-name{font-size:14px;font-weight:700;margin-top:6px}
@@ -288,6 +294,22 @@ body{width:100%;height:100%;min-height:-webkit-fill-available;overflow:hidden;
 .nbtn.ok{background:rgba(8,65,18,0.92);border-color:rgba(40,220,80,0.4);color:#44ff66;
   box-shadow:0 0 10px rgba(40,220,80,0.25);font-size:18px}
 .nbtn.ok:hover{box-shadow:0 0 22px rgba(40,220,80,0.5)}
+/* 分數（海洋星）題目與輸入 */
+.q-display.frac-mode{letter-spacing:0}
+.frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 5px;line-height:1}
+.frac-n,.frac-d{display:block;padding:0 4px;font-size:0.82em;letter-spacing:0}
+.frac-bar{display:block;width:100%;min-width:22px;height:2px;background:#fff;margin:2px 0}
+.frac-int{margin:0 4px;vertical-align:middle}
+.frac-op{margin:0 5px;color:#8fdfff}
+.frac-q{color:#ffd700;margin-left:4px}
+.frac-input{display:flex;flex-direction:column;align-items:center;margin:4px auto 0;min-height:30px}
+.frac-input .frac-box{min-width:44px;min-height:26px;padding:2px 8px;text-align:center;
+  font-family:'Orbitron',sans-serif;font-size:clamp(18px,4.5vw,26px);font-weight:700;color:#00d4ff;
+  border-radius:6px;border:2px solid rgba(0,212,255,0.25);background:rgba(0,0,0,0.3);cursor:pointer}
+.frac-input .frac-box.frac-box-active{border-color:#ffd700;box-shadow:0 0 10px rgba(255,215,0,0.4);color:#ffe680}
+.frac-input .frac-input-bar{width:56px;height:3px;background:#fff;margin:3px 0;border-radius:2px}
+.nbtn.switch{background:rgba(15,45,80,0.92);border-color:rgba(0,212,255,0.4);color:#8fdfff;font-size:14px}
+.nbtn.del{background:rgba(60,40,10,0.92);border-color:rgba(220,160,40,0.4);color:#ffcc66}
 
 /* ── Win ── */
 #s-win{background:radial-gradient(ellipse at 50% 30%,#001833,#000010);
@@ -826,15 +848,15 @@ select option{background:#1a1a3e;color:#fff}
   <button class="back-btn" onclick="goTo('s-title')">← 返回</button>
   <div class="screen-big-title">選擇星球</div>
   <div class="planets-grid">
-    <div class="planet-card planet-burning" onclick="goTo('s-world')">
+    <div class="planet-card planet-burning" onclick="selectPlanet('burning')">
       <div class="planet-orb">🔥</div>
       <div class="planet-name">燃燒星</div>
       <div class="planet-sub">四則運算挑戰</div>
     </div>
-    <div class="planet-card planet-locked">
-      <div class="planet-orb" style="font-size:38px;color:#333">?</div>
-      <div class="planet-name" style="color:#444">???</div>
-      <div class="planet-sub">🔒 未解鎖</div>
+    <div class="planet-card planet-ocean" id="planet-ocean-card" onclick="selectPlanet('ocean')">
+      <div class="planet-orb">🌊</div>
+      <div class="planet-name">海洋星</div>
+      <div class="planet-sub">分數四則運算</div>
     </div>
   </div>
 </div>
@@ -959,10 +981,16 @@ select option{background:#1a1a3e;color:#fff}
     </div>
     <div class="q-display" id="qDisplay">準備中...</div>
     <div class="ans-display" id="ansDisplay">_</div>
+    <!-- 分數輸入（海洋星，預設隱藏） -->
+    <div class="frac-input" id="frac-input" style="display:none">
+      <div class="frac-box frac-box-active" id="fracNumBox" data-field="num"></div>
+      <div class="frac-input-bar"></div>
+      <div class="frac-box" id="fracDenBox" data-field="den"></div>
+    </div>
   </div>
 
-  <!-- Numpad -->
-  <div class="numpad">
+  <!-- Numpad（整數，燃燒星） -->
+  <div class="numpad" id="int-numpad">
     <button class="nbtn" data-v="7">7</button>
     <button class="nbtn" data-v="8">8</button>
     <button class="nbtn" data-v="9">9</button>
@@ -975,6 +1003,24 @@ select option{background:#1a1a3e;color:#fff}
     <button class="nbtn span2" data-v="0">0</button>
     <button class="nbtn clr" data-v="C">C</button>
     <button class="nbtn ok" data-v="OK">✓</button>
+  </div>
+
+  <!-- Numpad（分數，海洋星，預設隱藏） -->
+  <div class="numpad" id="frac-numpad" style="display:none">
+    <button class="nbtn" data-fv="7">7</button>
+    <button class="nbtn" data-fv="8">8</button>
+    <button class="nbtn" data-fv="9">9</button>
+    <button class="nbtn" data-fv="4">4</button>
+    <button class="nbtn" data-fv="5">5</button>
+    <button class="nbtn" data-fv="6">6</button>
+    <button class="nbtn" data-fv="1">1</button>
+    <button class="nbtn" data-fv="2">2</button>
+    <button class="nbtn" data-fv="3">3</button>
+    <button class="nbtn switch" data-fv="SW">切換</button>
+    <button class="nbtn" data-fv="0">0</button>
+    <button class="nbtn del" data-fv="DEL">⌫</button>
+    <button class="nbtn clr" data-fv="C">C</button>
+    <button class="nbtn ok span2" data-fv="OK">✓</button>
   </div>
 </div>
 
@@ -2064,6 +2110,17 @@ const LEVELS = {
   '16':{op:'÷',name:'二位數÷一位數（非九九）',   time:150,sc:[[5,100],[7,90],[9,80],[10,70],[11,60]],df:50,S:800,A:700,B:600,mon:'demon',mnm:'暗焰魔王',tr:{i:'🔱',n:'暗王三叉'}},
   '17':{op:'÷',name:'二位數÷二位數',   time:200,sc:[[5,100],[7,90],[9,80],[10,70],[11,60]],df:50,S:750,A:650,B:550,mon:'demon',mnm:'暗焰魔王',tr:{i:'💀',n:'魔王骸骨'}},
   '18':{op:'÷',name:'三位數÷一位數',   time:200,sc:[[10,100],[14,90],[18,80],[22,70],[24,60]],df:50,S:750,A:650,B:550,mon:'demon',mnm:'暗焰魔王',tr:{i:'🌌',n:'暗界之眼'}},
+  // ── 海洋星（分數四則運算，第 19–28 關）──
+  '19':{kind:'frac',op:'f+',name:'同分母加減（真分數）',      time:120,sc:[[6,100],[9,90],[12,80],[15,70],[18,60]],df:50,S:800,A:700,B:600,mon:'imp',   mnm:'迷霧水母',tr:{i:'🐚',n:'貝殼徽章'}},
+  '20':{kind:'frac',op:'f+',name:'同分母加減（假分數/帶分數）',time:150,sc:[[7,100],[10,90],[13,80],[16,70],[19,60]],df:50,S:800,A:700,B:600,mon:'imp',   mnm:'迷霧水母',tr:{i:'🌊',n:'浪花章'}},
+  '21':{kind:'frac',op:'f+',name:'不同分母加減（真分數）',    time:180,sc:[[8,100],[12,90],[16,80],[20,70],[24,60]],df:50,S:750,A:650,B:550,mon:'golem', mnm:'珊瑚魔像',tr:{i:'🐠',n:'珊瑚魚章'}},
+  '22':{kind:'frac',op:'f+',name:'不同分母加減（假分數/帶分數）',time:200,sc:[[9,100],[13,90],[17,80],[21,70],[25,60]],df:50,S:750,A:650,B:550,mon:'golem', mnm:'珊瑚魔像',tr:{i:'🪸',n:'珊瑚冠'}},
+  '23':{kind:'frac',op:'f+',name:'連續不同分母加減（3 個數）',time:240,sc:[[12,100],[16,90],[20,80],[25,70],[30,60]],df:50,S:700,A:600,B:500,mon:'dragon',mnm:'漩渦巨獸',tr:{i:'🌀',n:'漩渦印記'}},
+  '24':{kind:'frac',op:'f×',name:'不能約分的乘法',           time:150,sc:[[6,100],[9,90],[12,80],[15,70],[18,60]],df:50,S:800,A:700,B:600,mon:'golem', mnm:'深海巨蟹',tr:{i:'🦀',n:'深海蟹鉗'}},
+  '25':{kind:'frac',op:'f×',name:'可以約分的乘法',           time:180,sc:[[8,100],[12,90],[16,80],[20,70],[24,60]],df:50,S:750,A:650,B:550,mon:'golem', mnm:'深海巨蟹',tr:{i:'🐙',n:'章魚護符'}},
+  '26':{kind:'frac',op:'f÷',name:'不能約分的除法',           time:180,sc:[[8,100],[12,90],[16,80],[20,70],[24,60]],df:50,S:750,A:650,B:550,mon:'demon', mnm:'暗潮魔王',tr:{i:'🦑',n:'墨晶石'}},
+  '27':{kind:'frac',op:'f÷',name:'可以約分的除法',           time:200,sc:[[9,100],[13,90],[17,80],[21,70],[25,60]],df:50,S:750,A:650,B:550,mon:'demon', mnm:'暗潮魔王',tr:{i:'🔱',n:'海神叉'}},
+  '28':{kind:'frac',op:'f÷',name:'連續不同分母乘除（3 個數）',time:240,sc:[[12,100],[16,90],[20,80],[25,70],[30,60]],df:50,S:700,A:600,B:500,mon:'dragon',mnm:'深海龍王',tr:{i:'🐢',n:'燦瀾之心'}},
 };
 const OPS = [
   {id:'add',name:'加法',icon:'＋',ids:['1','2','3','4','5']},
@@ -2071,7 +2128,21 @@ const OPS = [
   {id:'mul',name:'乘法',icon:'×',ids:['11','12','13','14']},
   {id:'div',name:'除法',icon:'÷',ids:['15','16','17','18']},
 ];
-const UNLOCK_CHAIN = ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18'];
+// ── 星球設定（燃燒星、海洋星）──
+const PLANET_OPS = {
+  burning: OPS,
+  ocean: [
+    {id:'fadd',name:'分數加減',icon:'＋－',ids:['19','20','21','22','23']},
+    {id:'fmul',name:'分數乘除',icon:'×÷',ids:['24','25','26','27','28']},
+  ],
+};
+const PLANETS = {
+  burning: {name:'燃燒星'},
+  ocean:   {name:'海洋星'},
+};
+let curPlanet = 'burning';
+const UNLOCK_CHAIN = ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18',
+  '19','20','21','22','23','24','25','26','27','28'];
 const FAIL_MSGS = [
   '再試一次，你一定可以！','失敗是成功之母，加油！',
   '數學勇士不言敗！','熟能生巧，繼續練習！','收集更多碎片，再回來挑戰！',
@@ -2435,7 +2506,136 @@ function initFire(){
 // QUESTION GENERATION
 // ═══════════════════════════════════════════════
 function r(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+
+// ═══════════════════════════════════════════════
+// 分數運算工具（海洋星）
+// ═══════════════════════════════════════════════
+function gcd(a,b){a=Math.abs(a);b=Math.abs(b);while(b){[a,b]=[b,a%b];}return a||1;}
+function reduce(n,d){if(d<0){n=-n;d=-d;}const g=gcd(n,d);return{n:n/g,d:d/g};}
+function fAdd(x,y){return reduce(x.n*y.d+y.n*x.d, x.d*y.d);}
+function fSub(x,y){return reduce(x.n*y.d-y.n*x.d, x.d*y.d);}
+function fMul(x,y){return reduce(x.n*y.n, x.d*y.d);}
+function fDiv(x,y){return reduce(x.n*y.d, x.d*y.n);}
+// 堆疊分數 HTML（分母為 1 時直接顯示整數）
+function fracHTML(n,d){
+  if(d===1) return `<span class="frac-int">${n}</span>`;
+  return `<span class="frac"><span class="frac-n">${n}</span><span class="frac-bar"></span><span class="frac-d">${d}</span></span>`;
+}
+// parts 例：[{n:3,d:4},'＋',{n:1,d:2}] → 完整題目 HTML（末尾 = ?）
+function exprHTML(parts){
+  let h='';
+  for(const p of parts){ h += (typeof p==='object') ? fracHTML(p.n,p.d) : `<span class="frac-op">${p}</span>`; }
+  return `${h}<span class="frac-op">=</span><span class="frac-q">?</span>`;
+}
+function fracText(parts){
+  return parts.map(p=> (typeof p==='object') ? (p.d===1?`${p.n}`:`${p.n}/${p.d}`) : p).join(' ') + ' = ?';
+}
+// 分數判定：使用者輸入需「已約到最簡」且「數值等於正解」
+function fracEqual(user, ans){
+  if(!user || !isFinite(user.n) || !isFinite(user.d) || user.d<=0) return false;
+  if(gcd(user.n,user.d)!==1) return false;            // 必須最簡
+  return user.n*ans.d === ans.n*user.d;               // 數值相等
+}
+// 分數出題（第 19–28 關）：回傳 {html,text,ans:{n,d},kind:'frac'}
+function genFrac(id){
+  const R=r;
+  function pf(maxD){const d=R(2,maxD);return{n:R(1,d-1),d};}                       // 真分數（可能未約）
+  function pfR(maxD){let d,n,t=0;do{d=R(2,maxD);n=R(1,d-1);}while(gcd(n,d)!==1&&t++<40);return{n,d};} // 最簡真分數
+  function impR(maxD){let d,n,t=0;do{d=R(2,maxD);n=R(d+1,2*d);}while(gcd(n,d)!==1&&t++<40);return{n,d};} // 最簡假分數
+  function pickR(maxD){return Math.random()<0.5?pfR(maxD):impR(maxD);}
+  let guard=300;
+  while(guard-->0){
+    let x,y,z,ans,parts,op;
+    switch(id){
+      case'19':{ // 同分母加減（真分數）
+        const d=R(3,10); op=Math.random()<0.5?'＋':'－';
+        const n1=R(1,d-1), n2=R(1,d-1);
+        if(op==='＋'){ if(n1+n2>d-1) continue; ans=reduce(n1+n2,d); }
+        else { if(n1<=n2) continue; ans=reduce(n1-n2,d); }
+        parts=[{n:n1,d},op,{n:n2,d}];
+        break;
+      }
+      case'20':{ // 同分母加減（假分數/帶分數）
+        const d=R(3,9); op=Math.random()<0.5?'＋':'－';
+        const n1=R(1,2*d), n2=R(1,2*d);
+        if(op==='＋'){ ans=reduce(n1+n2,d); }
+        else { if(n1<=n2) continue; ans=reduce(n1-n2,d); }
+        parts=[{n:n1,d},op,{n:n2,d}];
+        break;
+      }
+      case'21':{ // 不同分母加減（真分數）
+        x=pfR(9); y=pfR(9); if(x.d===y.d) continue;
+        op=Math.random()<0.5?'＋':'－';
+        ans = op==='＋'?fAdd(x,y):fSub(x,y);
+        if(ans.n<=0 || ans.n>=ans.d) continue;          // 結果需真分數
+        parts=[x,op,y];
+        break;
+      }
+      case'22':{ // 不同分母加減（假分數/帶分數）
+        x=pickR(8); y=pickR(8); if(x.d===y.d) continue;
+        op=Math.random()<0.5?'＋':'－';
+        ans = op==='＋'?fAdd(x,y):fSub(x,y);
+        if(ans.n<=0) continue;
+        parts=[x,op,y];
+        break;
+      }
+      case'23':{ // 連續不同分母加減（3 個數）
+        x=pfR(6); y=pfR(6); z=pfR(6);
+        if(x.d===y.d && y.d===z.d) continue;            // 至少兩個不同分母
+        const o1=Math.random()<0.5?'＋':'－', o2=Math.random()<0.5?'＋':'－';
+        const s = o1==='＋'?fAdd(x,y):fSub(x,y);
+        if(s.n<=0) continue;
+        ans = o2==='＋'?fAdd(s,z):fSub(s,z);
+        if(ans.n<=0) continue;
+        parts=[x,o1,y,o2,z];
+        break;
+      }
+      case'24':{ // 不能約分的乘法
+        x=pfR(9); y=pfR(9);
+        if(gcd(x.n*y.n, x.d*y.d)!==1) continue;         // 乘積已互質＝不能約分
+        ans=reduce(x.n*y.n, x.d*y.d);
+        parts=[x,'×',y];
+        break;
+      }
+      case'25':{ // 可以約分的乘法
+        x=pfR(9); y=pfR(9);
+        if(gcd(x.n*y.n, x.d*y.d)===1) continue;         // 需可約分
+        ans=reduce(x.n*y.n, x.d*y.d);
+        parts=[x,'×',y];
+        break;
+      }
+      case'26':{ // 不能約分的除法
+        x=pfR(9); y=pfR(9);
+        if(gcd(x.n*y.d, x.d*y.n)!==1) continue;
+        ans=reduce(x.n*y.d, x.d*y.n);
+        parts=[x,'÷',y];
+        break;
+      }
+      case'27':{ // 可以約分的除法
+        x=pfR(9); y=pfR(9);
+        if(gcd(x.n*y.d, x.d*y.n)===1) continue;
+        ans=reduce(x.n*y.d, x.d*y.n);
+        parts=[x,'÷',y];
+        break;
+      }
+      case'28':{ // 連續乘除（3 個數）
+        x=pfR(6); y=pfR(6); z=pfR(6);
+        const o1=Math.random()<0.5?'×':'÷', o2=Math.random()<0.5?'×':'÷';
+        const s = o1==='×'?fMul(x,y):fDiv(x,y);
+        ans = o2==='×'?fMul(s,z):fDiv(s,z);
+        parts=[x,o1,y,o2,z];
+        break;
+      }
+      default: return {html:'', text:'', ans:{n:0,d:1}, kind:'frac'};
+    }
+    if(!ans || ans.d<2 || ans.n<=0) continue;           // 統一約束：非整數、正值、最簡（reduce 已保證）
+    return {html:exprHTML(parts), text:fracText(parts), ans, kind:'frac'};
+  }
+  return {html:exprHTML([{n:1,d:5},'＋',{n:2,d:5}]), text:'1/5 ＋ 2/5 = ?', ans:{n:3,d:5}, kind:'frac'};
+}
+
 function genQ(id){
+  if(LEVELS[id] && LEVELS[id].kind==='frac') return genFrac(id);
   let a,b,ans,text;
   switch(id){
     case'1': a=r(1,9);b=r(1,9);ans=a+b;text=`${a} ＋ ${b} = ?`;break;
@@ -2479,6 +2679,7 @@ function gradeV(g){return{S:4,A:3,B:2,C:1}[g]||0;}
 // ═══════════════════════════════════════════════
 let curId=null;
 let GS={};
+let isFracLevel=false;
 
 // ═══════════════════════════════════════════════
 // VISUAL FEEDBACK SYSTEM
@@ -2522,6 +2723,10 @@ class Particle {
     if (zone === '燃燒溪谷')  { const c=['#FF4500','#FF6600','#FF8C00','#FFA07A']; return c[Math.floor(Math.random()*c.length)]; }
     if (zone === '火焰深林')  { const c=['#FFD700','#FFED4E','#FFC107','#FFB347']; return c[Math.floor(Math.random()*c.length)]; }
     if (zone === '鳳凰聖殿')  { const c=['#FFD700','#FFFFFF','#FFFACD','#FFE4B5']; return c[Math.floor(Math.random()*c.length)]; }
+    if (zone === '潮汐淺灘')  { const c=['#7FE3FF','#4FC3F7','#B3E5FC','#E0F7FA']; return c[Math.floor(Math.random()*c.length)]; }
+    if (zone === '珊瑚花園')  { const c=['#4DD0E1','#26C6DA','#80DEEA','#FF80AB']; return c[Math.floor(Math.random()*c.length)]; }
+    if (zone === '深海洋流')  { const c=['#1E88E5','#42A5F5','#00ACC1','#5C6BC0']; return c[Math.floor(Math.random()*c.length)]; }
+    if (zone === '龜島聖殿')  { const c=['#7FE3FF','#FFFFFF','#B2EBF2','#A5D6A7']; return c[Math.floor(Math.random()*c.length)]; }
     return '#FFD700';
   }
   update() {
@@ -2861,6 +3066,17 @@ const SCENE_MAP = {
   16: { dead: 'images/fire_temple_dead.jpg', alive: 'images/fire_temple_alive.jpg', zone: '鳳凰聖殿' },
   17: { dead: 'images/fire_temple_dead.jpg', alive: 'images/fire_temple_alive.jpg', zone: '鳳凰聖殿' },
   18: { dead: 'images/fire_temple_dead.jpg', alive: 'images/fire_temple_alive.jpg', zone: '鳳凰聖殿' },
+  // ── 海洋星（圖檔待提供，缺圖時自動顯示純色底）──
+  19: { dead: 'images/ocean_shallow_dead.jpg', alive: 'images/ocean_shallow_alive.jpg', zone: '潮汐淺灘' },
+  20: { dead: 'images/ocean_shallow_dead.jpg', alive: 'images/ocean_shallow_alive.jpg', zone: '潮汐淺灘' },
+  21: { dead: 'images/ocean_coral_dead.jpg',   alive: 'images/ocean_coral_alive.jpg',   zone: '珊瑚花園' },
+  22: { dead: 'images/ocean_coral_dead.jpg',   alive: 'images/ocean_coral_alive.jpg',   zone: '珊瑚花園' },
+  23: { dead: 'images/ocean_coral_dead.jpg',   alive: 'images/ocean_coral_alive.jpg',   zone: '珊瑚花園' },
+  24: { dead: 'images/ocean_current_dead.jpg', alive: 'images/ocean_current_alive.jpg', zone: '深海洋流' },
+  25: { dead: 'images/ocean_current_dead.jpg', alive: 'images/ocean_current_alive.jpg', zone: '深海洋流' },
+  26: { dead: 'images/ocean_current_dead.jpg', alive: 'images/ocean_current_alive.jpg', zone: '深海洋流' },
+  27: { dead: 'images/ocean_temple_dead.jpg',  alive: 'images/ocean_temple_alive.jpg',  zone: '龜島聖殿' },
+  28: { dead: 'images/ocean_temple_dead.jpg',  alive: 'images/ocean_temple_alive.jpg',  zone: '龜島聖殿' },
 };
 
 const ZONE_DIALOGS = {
@@ -2877,6 +3093,19 @@ const ZONE_DIALOGS = {
     { speaker: '小星', img: 'images/nova.jpg', text: '焰羽就沉睡在這座聖殿深處……我能感覺到牠的心跳！' },
     { speaker: '小星', img: 'images/nova.jpg', text: '最後一段路了，加油！' },
   ],
+  // ── 海洋星 ──
+  '珊瑚花園': [
+    { speaker: '小星', img: 'images/nova.jpg', text: '游深一點，這裡是珊瑚花園！' },
+    { speaker: '小星', img: 'images/nova.jpg', text: '這些珊瑚曾經五彩繽紛，現在卻被迷霧染成灰白……' },
+  ],
+  '深海洋流': [
+    { speaker: '小星', img: 'images/nova.jpg', text: '小心洋流！我們進入深海洋流了！' },
+    { speaker: '小星', img: 'images/nova.jpg', text: '越深的地方，迷霧越濃……但也離守護神越近！' },
+  ],
+  '龜島聖殿': [
+    { speaker: '小星', img: 'images/nova.jpg', text: '看到了嗎？那就是龜島聖殿！' },
+    { speaker: '小星', img: 'images/nova.jpg', text: '海龜長老燦瀾就沉睡在這裡……最後的挑戰到了！' },
+  ],
 };
 
 const zoneEncourage = {
@@ -2884,6 +3113,10 @@ const zoneEncourage = {
   '燃燒溪谷': ['溪水開始流動了！', '岩漿重新發光了！', '太棒了！'],
   '火焰深林': ['火焰花綻放了！', '整棵樹都亮了！', '完美！'],
   '鳳凰聖殿': ['聖殿在發光！', '焰羽的心跳更強了！', '就是這樣！'],
+  '潮汐淺灘': ['浪花變乾淨了！', '小魚游回來了！', '答對了！'],
+  '珊瑚花園': ['珊瑚重新綻放了！', '海水變清澈了！', '太棒了！'],
+  '深海洋流': ['洋流恢復平靜了！', '深海亮起來了！', '完美！'],
+  '龜島聖殿': ['聖殿在發光！', '燦瀾的呼吸更平穩了！', '就是這樣！'],
 };
 
 // PUZZLE SYSTEM
@@ -2894,6 +3127,12 @@ const PLANET_PUZZLES = {
     levels: ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18'],
     spiritImg: 'images/phoenix.jpg',
     spiritName: '焰羽精靈',
+  },
+  'ocean_star': {
+    name: '海洋星',
+    levels: ['19','20','21','22','23','24','25','26','27','28'],
+    spiritImg: 'images/turtle_guardian.jpg',
+    spiritName: '燦瀾',
   },
 };
 
@@ -3079,6 +3318,17 @@ const LEVEL_DIALOGS = {
     { speaker: '小星', img: 'images/nova.jpg', text: '火鳳凰焰羽就沉睡在這裡……只要打完這一關，牠就會醒過來！' },
     { speaker: '小星', img: 'images/nova.jpg', text: '這會是最艱難的一戰，但我相信你！' },
   ],
+  // ── 海洋星 ──
+  '19': [
+    { speaker: '小星', img: 'images/nova.jpg', text: '{稱呼}，我們來到海洋星了！這裡曾是最湛藍的海洋。' },
+    { speaker: '小星', img: 'images/nova.jpg', text: '但迷霧讓海水變濁、珊瑚枯萎……我們要用「分數之力」淨化它！' },
+    { speaker: '小星', img: 'images/nova.jpg', text: '分數就是把東西平分：分母是分成幾份，分子是拿了幾份。準備好了嗎？' },
+  ],
+  '28': [
+    { speaker: '小星', img: 'images/nova.jpg', text: '{稱呼}！這是海洋星最深處——龜島聖殿！' },
+    { speaker: '小星', img: 'images/nova.jpg', text: '海龜長老燦瀾就沉睡在這裡……打完這一關，牠就會醒來！' },
+    { speaker: '小星', img: 'images/nova.jpg', text: '連續的乘除是最難的挑戰，但我相信你一定做得到！' },
+  ],
 };
 
 const WIN8_DIALOG = [
@@ -3087,6 +3337,14 @@ const WIN8_DIALOG = [
   { speaker: '焰羽', img: 'images/phoenix.jpg', text: '你的數學之力讓這片森林重獲新生。我將賜予你「火焰的祝福」。' },
   { speaker: '小星', img: 'images/nova.jpg', text: '太棒了！我們拿到第一個祝福了！' },
   { speaker: '小星', img: 'images/nova.jpg', text: '但還有其他星球需要我們的幫助……繼續前進吧！' },
+];
+
+const WIN28_DIALOG = [
+  { speaker: '小星', img: 'images/nova.jpg', text: '守護者！你感覺到了嗎？整片海洋正在復甦！' },
+  { speaker: '燦瀾', img: 'images/turtle_guardian.jpg', text: '……年輕的守護者，是你的分數之力喚醒了我。' },
+  { speaker: '燦瀾', img: 'images/turtle_guardian.jpg', text: '你讓珊瑚重新綻放、海水再度清澈。我將賜予你「海洋的祝福」。' },
+  { speaker: '小星', img: 'images/nova.jpg', text: '太厲害了！我們拿到第二個祝福了！' },
+  { speaker: '小星', img: 'images/nova.jpg', text: '你已經掌握了分數的力量……下一個星球，我們再一起去冒險！' },
 ];
 
 function showDialog(lines){
@@ -3187,13 +3445,21 @@ function startLevel(id){
     wrongThisQ:0,   // 本題答錯次數（顯示用）
     wrongTotal:0,   // 整關累計答錯次數（扣命用）
     totalCorrect:0, starsEarned:0,
+    fracNum:'', fracDen:'', fracField:'num',  // 分數輸入（海洋星）
   };
+  isFracLevel = !!(lv && lv.kind==='frac');
   // 場景圖片（倒數前先設定好）
   const sceneData = SCENE_MAP[parseInt(id)] || SCENE_MAP[1];
   const newZone = sceneData.zone;
   const deadEl = document.getElementById('scene-dead');
   const aliveEl = document.getElementById('scene-alive');
-  if (deadEl) deadEl.src = sceneData.dead;
+  if (deadEl) {
+    // 缺圖 fallback 顏色：海洋星藍、燃燒星暗紅
+    deadEl.onerror = isFracLevel
+      ? function(){ this.style.background='#052a45'; this.style.display='block'; }
+      : function(){ this.style.background='#1a000a'; this.style.display='block'; };
+    deadEl.src = sceneData.dead;
+  }
   if (aliveEl) { aliveEl.src = sceneData.alive; aliveEl.style.opacity = '0'; }
 
   // Intro
@@ -3208,6 +3474,7 @@ function startLevel(id){
   runCountdown(['3','2','1','GO!'], async ()=>{
     goTo('s-game');
     setupGame();
+    setInputMode(id);
     // Reset scene
     const alive = document.getElementById('scene-alive');
     const fog   = document.getElementById('scene-fog');
@@ -3285,10 +3552,19 @@ function nextQ(){
   if(GS.qIdx>=GS.totalQ){clearTimers();endGame('win');return;}
   const q=GS.qs[GS.qIdx];
   GS.ans='';
+  GS.fracNum=''; GS.fracDen=''; GS.fracField='num';
   GS.wrongThisQ=0;
   GS.qStartT=Date.now();
-  document.getElementById('qDisplay').textContent=q.text;
-  document.getElementById('ansDisplay').textContent='_';
+  const qd=document.getElementById('qDisplay');
+  if(isFracLevel){
+    qd.classList.add('frac-mode');
+    qd.innerHTML=q.html;
+    renderFracInput();
+  } else {
+    qd.classList.remove('frac-mode');
+    qd.textContent=q.text;
+    document.getElementById('ansDisplay').textContent='_';
+  }
   // wrongRow shows cumulative hearts used: ✗ = lost, ○ = remaining
   const used=3-GS.heroHp;
   document.getElementById('wrongRow').textContent='✗'.repeat(used)+'○'.repeat(Math.max(0,3-used));
@@ -3302,11 +3578,22 @@ function nextQ(){
 }
 
 function submit(){
-  const num=parseInt(GS.ans,10);
-  if(isNaN(num)||GS.ans==='') return;
   const q=GS.qs[GS.qIdx];
   const secs=(Date.now()-GS.qStartT)/1000;
-  if(num===q.ans){
+  let isCorrect, logVal;
+  if(isFracLevel){
+    if(GS.fracNum===''||GS.fracDen==='') return;
+    const user={n:parseInt(GS.fracNum,10), d:parseInt(GS.fracDen,10)};
+    if(isNaN(user.n)||isNaN(user.d)||user.d===0) return;
+    isCorrect = fracEqual(user, q.ans);
+    logVal = `${user.n}/${user.d}`;
+  } else {
+    const num=parseInt(GS.ans,10);
+    if(isNaN(num)||GS.ans==='') return;
+    isCorrect = (num===q.ans);
+    logVal = num;
+  }
+  if(isCorrect){
     sfx('correct');
     const pts=calcPts(curId,secs,GS.wrongThisQ);
     GS.score+=pts;
@@ -3314,7 +3601,7 @@ function submit(){
     GS.totalCorrect++;
     correctCount++;
     comboCount++;
-    logAnswer(curId, q.text, num, true, Math.round(secs*1000));
+    logAnswer(curId, q.text, logVal, true, Math.round(secs*1000));
     updateDailyTask('correct', 1);
     GS.monHp--;
     updateWorldRestore();
@@ -3338,7 +3625,7 @@ function submit(){
     comboCount = 0;
     GS.score=Math.max(GS.score-50,-999);
     GS.heroHp--;
-    logAnswer(curId, q.text, num, false, Math.round(secs*1000));
+    logAnswer(curId, q.text, logVal, false, Math.round(secs*1000));
     showWrongFogEffect();
     showComfortText();
     updateHUD();
@@ -3349,7 +3636,8 @@ function submit(){
     } else {
       doWrongAnim(()=>{
         GS.ans='';
-        document.getElementById('ansDisplay').textContent='_';
+        if(isFracLevel){ GS.fracNum=''; GS.fracDen=''; GS.fracField='num'; renderFracInput(); }
+        else document.getElementById('ansDisplay').textContent='_';
         // 更新本題顯示（保留本題錯誤標記，但同步累計心數）
         GS.wrongThisQ=0; // 每題計數重置（僅顯示用）
         const used=3-GS.heroHp;
@@ -3493,9 +3781,11 @@ function endGame(result){
       return Promise.resolve();
     };
 
-    // 第 8 關通關先播精靈甦醒動畫和結局對話，再顯示 s-win
+    // 守護神甦醒：燃燒星第 8 關（焰羽）、海洋星第 28 關（燦瀾）
     if(curId==='8'){
       doVictoryEffect().then(getPuzzleChain).then(()=>showSpiritAwaken('images/phoenix.jpg','焰羽甦醒')).then(()=>showDialog(WIN8_DIALOG)).then(doShowWin);
+    } else if(curId==='28'){
+      doVictoryEffect().then(getPuzzleChain).then(()=>showSpiritAwaken('images/turtle_guardian.jpg','燦瀾甦醒')).then(()=>showDialog(WIN28_DIALOG)).then(doShowWin);
     } else {
       doVictoryEffect().then(getPuzzleChain).then(doShowWin);
     }
@@ -3513,6 +3803,8 @@ const CELEB_DATA = {
   '10':{title:'⚡ 減法試煉完成！\n減法對你毫無難度！',unlock:'🔓 乘法試煉已解鎖！'},
   '14':{title:'✨ 乘法試煉完成！\n乘法天才就是你！',unlock:'🔓 除法試煉已解鎖！'},
   '18':{title:'👑 燃燒星完全制霸！\n守護神即將甦醒！',unlock:'🌟 你是燃燒星的英雄！'},
+  '23':{title:'🌊 分數加減試煉完成！\n你已掌握分數的加減！',unlock:'🔓 分數乘除試煉已解鎖！'},
+  '28':{title:'🐢 海洋星完全制霸！\n守護神即將甦醒！',unlock:'🌟 你是海洋星的英雄！'},
 };
 let _celebWinCb=null;
 let _celebTimeout=null;
@@ -3601,7 +3893,7 @@ function goTo(id){
     if(id==='s-title') updateTitleHero();
     if(id==='s-world') renderWorld();
     if(id==='s-collection') renderCollection();
-    if(id==='s-planet') refreshStarsDisplay();
+    if(id==='s-planet'){ refreshStarsDisplay(); renderPlanetCards(); }
     if(id==='s-leaderboard') loadLeaderboard();
     if(id==='s-friends') loadFriendsScreen();
     if(id==='s-tasks') renderTasksScreen();
@@ -3619,10 +3911,27 @@ function openCollection(){goTo('s-collection');}
 // ═══════════════════════════════════════════════
 // WORLD MAP
 // ═══════════════════════════════════════════════
+// 星球選擇：破完燃燒星（第 18 關）才解鎖海洋星
+function isPlanetUnlocked(p){ return p!=='ocean' || !!SS.lv('18'); }
+function renderPlanetCards(){
+  const oc=document.getElementById('planet-ocean-card');
+  if(!oc) return;
+  const locked=!isPlanetUnlocked('ocean');
+  oc.classList.toggle('locked-planet', locked);
+  oc.querySelector('.planet-sub').textContent = locked ? '🔒 破完燃燒星後解鎖' : '分數四則運算';
+}
+function selectPlanet(p){
+  if(!isPlanetUnlocked(p)){ showToast('先破完燃燒星，海洋星就會解鎖！'); return; }
+  curPlanet=p;
+  goTo('s-world');
+}
+
 function renderWorld(){
+  const title=document.querySelector('#s-world .screen-big-title');
+  if(title) title.textContent=PLANETS[curPlanet].name;
   const g=document.getElementById('opsGrid');
   g.innerHTML='';
-  for(const op of OPS){
+  for(const op of (PLANET_OPS[curPlanet]||OPS)){
     const done=op.ids.filter(id=>SS.lv(id)).length;
     const el=document.createElement('div');
     el.className='op-card';
@@ -3647,7 +3956,7 @@ function renderLevelSelect(op){
   document.getElementById('lvlBreadcrumb').innerHTML=
     `<span onclick="goTo('s-title')">首頁</span>`+
     `<span class="bc-sep">＞</span>`+
-    `<span onclick="goTo('s-planet')">燃燒星</span>`+
+    `<span onclick="goTo('s-planet')">${PLANETS[curPlanet].name}</span>`+
     `<span class="bc-sep">＞</span>`+
     `<span class="bc-cur">${op.name}</span>`;
   // Progress
@@ -3721,16 +4030,72 @@ function handleInput(v){
   }
 }
 
-document.querySelectorAll('.nbtn').forEach(b=>{
+// ── 分數輸入（海洋星）──
+function setInputMode(id){
+  const frac = !!(LEVELS[id] && LEVELS[id].kind==='frac');
+  isFracLevel = frac;
+  const intPad=document.getElementById('int-numpad');
+  const fracPad=document.getElementById('frac-numpad');
+  const fracIn=document.getElementById('frac-input');
+  const ansD=document.getElementById('ansDisplay');
+  if(intPad) intPad.style.display = frac?'none':'';
+  if(fracPad) fracPad.style.display = frac?'':'none';
+  if(fracIn) fracIn.style.display = frac?'':'none';
+  if(ansD) ansD.style.display = frac?'none':'';
+}
+function renderFracInput(){
+  const nb=document.getElementById('fracNumBox'), db=document.getElementById('fracDenBox');
+  if(!nb||!db) return;
+  nb.textContent=GS.fracNum||'';
+  db.textContent=GS.fracDen||'';
+  nb.classList.toggle('frac-box-active', GS.fracField==='num');
+  db.classList.toggle('frac-box-active', GS.fracField==='den');
+}
+function handleFracInput(v){
+  if(v==='OK'){submit();return;}
+  if(v==='C'){GS.fracNum='';GS.fracDen='';GS.fracField='num';renderFracInput();return;}
+  if(v==='SW'){GS.fracField=GS.fracField==='num'?'den':'num';renderFracInput();return;}
+  if(v==='DEL'){
+    if(GS.fracField==='num') GS.fracNum=GS.fracNum.slice(0,-1);
+    else GS.fracDen=GS.fracDen.slice(0,-1);
+    renderFracInput();return;
+  }
+  sfx('key');
+  if(GS.fracField==='num'){ if(GS.fracNum.length<3) GS.fracNum+=v; }
+  else { if(GS.fracDen.length<3) GS.fracDen+=v; }
+  renderFracInput();
+}
+
+document.querySelectorAll('#int-numpad .nbtn').forEach(b=>{
   b.addEventListener('pointerdown',e=>{
     e.preventDefault();
     try { if(_ac && _ac.state==='suspended') _ac.resume(); else if(!_ac) ac(); } catch(e2){}
     handleInput(b.dataset.v);
   });
 });
+document.querySelectorAll('#frac-numpad .nbtn').forEach(b=>{
+  b.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    try { if(_ac && _ac.state==='suspended') _ac.resume(); else if(!_ac) ac(); } catch(e2){}
+    handleFracInput(b.dataset.fv);
+  });
+});
+['fracNumBox','fracDenBox'].forEach(idb=>{
+  const el=document.getElementById(idb);
+  if(el) el.addEventListener('pointerdown',e=>{ e.preventDefault(); GS.fracField=el.dataset.field; renderFracInput(); });
+});
 
 document.addEventListener('keydown',e=>{
   if(document.getElementById('s-game').classList.contains('active')){
+    if(isFracLevel){
+      if('0123456789'.includes(e.key)) handleFracInput(e.key);
+      else if(e.key==='Enter') handleFracInput('OK');
+      else if(e.key==='/'||e.key==='ArrowDown'){ e.preventDefault(); GS.fracField='den'; renderFracInput(); }
+      else if(e.key==='ArrowUp'){ e.preventDefault(); GS.fracField='num'; renderFracInput(); }
+      else if(e.key==='Backspace'){ e.preventDefault(); handleFracInput('DEL'); }
+      else if(e.key==='Escape') handleFracInput('C');
+      return;
+    }
     if('0123456789'.includes(e.key)) handleInput(e.key);
     else if(e.key==='Enter') handleInput('OK');
     else if(e.key==='Backspace'){
