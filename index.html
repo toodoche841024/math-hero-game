@@ -302,14 +302,19 @@ body{width:100%;height:100%;min-height:-webkit-fill-available;overflow:hidden;
 .frac-int{margin:0 4px;vertical-align:middle}
 .frac-op{margin:0 5px;color:#8fdfff}
 .frac-q{color:#ffd700;margin-left:4px}
-.frac-input{display:flex;flex-direction:column;align-items:center;margin:4px auto 0;min-height:30px}
-.frac-input .frac-box{min-width:44px;min-height:26px;padding:2px 8px;text-align:center;
-  font-family:'Orbitron',sans-serif;font-size:clamp(18px,4.5vw,26px);font-weight:700;color:#00d4ff;
-  border-radius:6px;border:2px solid rgba(0,212,255,0.25);background:rgba(0,0,0,0.3);cursor:pointer}
-.frac-input .frac-box.frac-box-active{border-color:#ffd700;box-shadow:0 0 10px rgba(255,215,0,0.4);color:#ffe680}
-.frac-input .frac-input-bar{width:56px;height:3px;background:#fff;margin:3px 0;border-radius:2px}
-.nbtn.switch{background:rgba(15,45,80,0.92);border-color:rgba(0,212,255,0.4);color:#8fdfff;font-size:14px}
-.nbtn.del{background:rgba(60,40,10,0.92);border-color:rgba(220,160,40,0.4);color:#ffcc66}
+/* 分數選擇題（海洋星，四選一） */
+.frac-choices{width:100%;max-width:360px;margin:8px auto;padding:6px;
+  padding-bottom:calc(6px + env(safe-area-inset-bottom,12px));
+  display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.frac-choice{min-height:66px;display:flex;align-items:center;justify-content:center;
+  border-radius:14px;cursor:pointer;user-select:none;transition:transform 0.1s,box-shadow 0.15s,background 0.15s;
+  background:rgba(10,40,70,0.92);border:2px solid rgba(0,212,255,0.35);color:#eaffff;
+  font-family:'Orbitron',sans-serif;font-size:24px;font-weight:700}
+.frac-choice .frac{margin:0}
+.frac-choice:active{transform:scale(0.94)}
+.frac-choice.chosen-right{background:rgba(8,80,30,0.95);border-color:#3be06a;box-shadow:0 0 20px rgba(60,220,100,0.55);color:#b6ffcb}
+.frac-choice.chosen-wrong{background:rgba(90,15,15,0.95);border-color:#ff5555;box-shadow:0 0 20px rgba(255,60,60,0.45);color:#ffb3b3}
+.frac-choice.disabled{opacity:0.45;pointer-events:none}
 
 /* ── Win ── */
 #s-win{background:radial-gradient(ellipse at 50% 30%,#001833,#000010);
@@ -981,12 +986,6 @@ select option{background:#1a1a3e;color:#fff}
     </div>
     <div class="q-display" id="qDisplay">準備中...</div>
     <div class="ans-display" id="ansDisplay">_</div>
-    <!-- 分數輸入（海洋星，預設隱藏） -->
-    <div class="frac-input" id="frac-input" style="display:none">
-      <div class="frac-box frac-box-active" id="fracNumBox" data-field="num"></div>
-      <div class="frac-input-bar"></div>
-      <div class="frac-box" id="fracDenBox" data-field="den"></div>
-    </div>
   </div>
 
   <!-- Numpad（整數，燃燒星） -->
@@ -1005,22 +1004,12 @@ select option{background:#1a1a3e;color:#fff}
     <button class="nbtn ok" data-v="OK">✓</button>
   </div>
 
-  <!-- Numpad（分數，海洋星，預設隱藏） -->
-  <div class="numpad" id="frac-numpad" style="display:none">
-    <button class="nbtn" data-fv="7">7</button>
-    <button class="nbtn" data-fv="8">8</button>
-    <button class="nbtn" data-fv="9">9</button>
-    <button class="nbtn" data-fv="4">4</button>
-    <button class="nbtn" data-fv="5">5</button>
-    <button class="nbtn" data-fv="6">6</button>
-    <button class="nbtn" data-fv="1">1</button>
-    <button class="nbtn" data-fv="2">2</button>
-    <button class="nbtn" data-fv="3">3</button>
-    <button class="nbtn switch" data-fv="SW">切換</button>
-    <button class="nbtn" data-fv="0">0</button>
-    <button class="nbtn del" data-fv="DEL">⌫</button>
-    <button class="nbtn clr" data-fv="C">C</button>
-    <button class="nbtn ok span2" data-fv="OK">✓</button>
+  <!-- 分數選擇題（海洋星，四選一，預設隱藏） -->
+  <div class="frac-choices" id="frac-choices" style="display:none">
+    <button class="frac-choice" data-opt="0"></button>
+    <button class="frac-choice" data-opt="1"></button>
+    <button class="frac-choice" data-opt="2"></button>
+    <button class="frac-choice" data-opt="3"></button>
   </div>
 </div>
 
@@ -2537,6 +2526,33 @@ function fracEqual(user, ans){
   return user.n*ans.d === ans.n*user.d;               // 數值相等
 }
 // 分數出題（第 19–28 關）：回傳 {html,text,ans:{n,d},kind:'frac'}
+// 四選一：由正解產生 1 正解 + 3 誘答（皆最簡、分母≥2、與正解不等值、互不重複），洗牌回傳
+function buildFracOptions(ans){
+  const key=f=>f.n+'/'+f.d;
+  const eq=f=>f.n*ans.d===ans.n*f.d;               // 與正解等值？
+  const opts=[{n:ans.n,d:ans.d}];
+  const seen={[key(ans)]:1};
+  const cand=[
+    {n:ans.n+1,d:ans.d},{n:ans.n-1,d:ans.d},
+    {n:ans.n,d:ans.d+1},{n:ans.n,d:ans.d-1},
+    {n:ans.n+1,d:ans.d+1},{n:ans.n+2,d:ans.d},
+    {n:ans.n,d:ans.d+2},{n:ans.d,d:ans.n},
+    {n:ans.n+1,d:ans.d-1},{n:ans.n*2,d:ans.d+1}
+  ];
+  for(let i=cand.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cand[i],cand[j]]=[cand[j],cand[i]];}
+  const tryAdd=c=>{
+    if(opts.length>=4||!c||c.n<=0||c.d<2) return;
+    const rc=reduce(c.n,c.d);
+    if(rc.d<2||rc.n<=0||seen[key(rc)]||eq(rc)) return;
+    seen[key(rc)]=1; opts.push(rc);
+  };
+  cand.forEach(tryAdd);
+  let guard=60;
+  while(opts.length<4 && guard-->0){ tryAdd({n:r(1,2*ans.d),d:r(2,12)}); }
+  for(let i=opts.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[opts[i],opts[j]]=[opts[j],opts[i]];}
+  return opts;
+}
+
 function genFrac(id){
   const R=r;
   function pf(maxD){const d=R(2,maxD);return{n:R(1,d-1),d};}                       // 真分數（可能未約）
@@ -2629,9 +2645,10 @@ function genFrac(id){
       default: return {html:'', text:'', ans:{n:0,d:1}, kind:'frac'};
     }
     if(!ans || ans.d<2 || ans.n<=0) continue;           // 統一約束：非整數、正值、最簡（reduce 已保證）
-    return {html:exprHTML(parts), text:fracText(parts), ans, kind:'frac'};
+    return {html:exprHTML(parts), text:fracText(parts), ans, kind:'frac', options:buildFracOptions(ans)};
   }
-  return {html:exprHTML([{n:1,d:5},'＋',{n:2,d:5}]), text:'1/5 ＋ 2/5 = ?', ans:{n:3,d:5}, kind:'frac'};
+  const fb={n:3,d:5};
+  return {html:exprHTML([{n:1,d:5},'＋',{n:2,d:5}]), text:'1/5 ＋ 2/5 = ?', ans:fb, kind:'frac', options:buildFracOptions(fb)};
 }
 
 function genQ(id){
@@ -3445,7 +3462,7 @@ function startLevel(id){
     wrongThisQ:0,   // 本題答錯次數（顯示用）
     wrongTotal:0,   // 整關累計答錯次數（扣命用）
     totalCorrect:0, starsEarned:0,
-    fracNum:'', fracDen:'', fracField:'num',  // 分數輸入（海洋星）
+    chosenFrac:null, fracLocked:false,  // 分數選擇題（海洋星）
   };
   isFracLevel = !!(lv && lv.kind==='frac');
   // 場景圖片（倒數前先設定好）
@@ -3552,14 +3569,14 @@ function nextQ(){
   if(GS.qIdx>=GS.totalQ){clearTimers();endGame('win');return;}
   const q=GS.qs[GS.qIdx];
   GS.ans='';
-  GS.fracNum=''; GS.fracDen=''; GS.fracField='num';
+  GS.chosenFrac=null; GS.fracLocked=false;
   GS.wrongThisQ=0;
   GS.qStartT=Date.now();
   const qd=document.getElementById('qDisplay');
   if(isFracLevel){
     qd.classList.add('frac-mode');
     qd.innerHTML=q.html;
-    renderFracInput();
+    renderFracChoices(q);
   } else {
     qd.classList.remove('frac-mode');
     qd.textContent=q.text;
@@ -3582,9 +3599,8 @@ function submit(){
   const secs=(Date.now()-GS.qStartT)/1000;
   let isCorrect, logVal;
   if(isFracLevel){
-    if(GS.fracNum===''||GS.fracDen==='') return;
-    const user={n:parseInt(GS.fracNum,10), d:parseInt(GS.fracDen,10)};
-    if(isNaN(user.n)||isNaN(user.d)||user.d===0) return;
+    if(!GS.chosenFrac) return;
+    const user=GS.chosenFrac;
     isCorrect = fracEqual(user, q.ans);
     logVal = `${user.n}/${user.d}`;
   } else {
@@ -3636,7 +3652,7 @@ function submit(){
     } else {
       doWrongAnim(()=>{
         GS.ans='';
-        if(isFracLevel){ GS.fracNum=''; GS.fracDen=''; GS.fracField='num'; renderFracInput(); }
+        if(isFracLevel){ GS.chosenFrac=null; renderFracChoices(GS.qs[GS.qIdx]); }
         else document.getElementById('ansDisplay').textContent='_';
         // 更新本題顯示（保留本題錯誤標記，但同步累計心數）
         GS.wrongThisQ=0; // 每題計數重置（僅顯示用）
@@ -4035,35 +4051,36 @@ function setInputMode(id){
   const frac = !!(LEVELS[id] && LEVELS[id].kind==='frac');
   isFracLevel = frac;
   const intPad=document.getElementById('int-numpad');
-  const fracPad=document.getElementById('frac-numpad');
-  const fracIn=document.getElementById('frac-input');
+  const fracCh=document.getElementById('frac-choices');
   const ansD=document.getElementById('ansDisplay');
   if(intPad) intPad.style.display = frac?'none':'';
-  if(fracPad) fracPad.style.display = frac?'':'none';
-  if(fracIn) fracIn.style.display = frac?'':'none';
+  if(fracCh) fracCh.style.display = frac?'':'none';
   if(ansD) ansD.style.display = frac?'none':'';
 }
-function renderFracInput(){
-  const nb=document.getElementById('fracNumBox'), db=document.getElementById('fracDenBox');
-  if(!nb||!db) return;
-  nb.textContent=GS.fracNum||'';
-  db.textContent=GS.fracDen||'';
-  nb.classList.toggle('frac-box-active', GS.fracField==='num');
-  db.classList.toggle('frac-box-active', GS.fracField==='den');
+// 渲染四個選項（並解除鎖定、清除上一題的紅/綠標記）
+function renderFracChoices(q){
+  const box=document.getElementById('frac-choices');
+  if(!box||!q||!q.options) return;
+  GS.fracLocked=false;
+  box.querySelectorAll('.frac-choice').forEach((b,i)=>{
+    const o=q.options[i];
+    b.className='frac-choice';
+    if(o){ b.style.display=''; b.innerHTML=fracHTML(o.n,o.d); }
+    else { b.style.display='none'; b.innerHTML=''; }
+  });
 }
-function handleFracInput(v){
-  if(v==='OK'){submit();return;}
-  if(v==='C'){GS.fracNum='';GS.fracDen='';GS.fracField='num';renderFracInput();return;}
-  if(v==='SW'){GS.fracField=GS.fracField==='num'?'den':'num';renderFracInput();return;}
-  if(v==='DEL'){
-    if(GS.fracField==='num') GS.fracNum=GS.fracNum.slice(0,-1);
-    else GS.fracDen=GS.fracDen.slice(0,-1);
-    renderFracInput();return;
-  }
-  sfx('key');
-  if(GS.fracField==='num'){ if(GS.fracNum.length<3) GS.fracNum+=v; }
-  else { if(GS.fracDen.length<3) GS.fracDen+=v; }
-  renderFracInput();
+// 點選某個選項：標記正/誤、鎖定避免連點，交給 submit() 判定
+function chooseFrac(i){
+  if(GS.fracLocked) return;
+  const q=GS.qs[GS.qIdx];
+  if(!q||!q.options||!q.options[i]) return;
+  GS.chosenFrac=q.options[i];
+  GS.fracLocked=true;
+  const btns=document.querySelectorAll('#frac-choices .frac-choice');
+  const correct=fracEqual(GS.chosenFrac,q.ans);
+  btns.forEach((b,idx)=>{ if(idx!==i) b.classList.add('disabled'); });
+  if(btns[i]) btns[i].classList.add(correct?'chosen-right':'chosen-wrong');
+  submit();
 }
 
 document.querySelectorAll('#int-numpad .nbtn').forEach(b=>{
@@ -4073,27 +4090,19 @@ document.querySelectorAll('#int-numpad .nbtn').forEach(b=>{
     handleInput(b.dataset.v);
   });
 });
-document.querySelectorAll('#frac-numpad .nbtn').forEach(b=>{
+document.querySelectorAll('#frac-choices .frac-choice').forEach(b=>{
   b.addEventListener('pointerdown',e=>{
     e.preventDefault();
     try { if(_ac && _ac.state==='suspended') _ac.resume(); else if(!_ac) ac(); } catch(e2){}
-    handleFracInput(b.dataset.fv);
+    sfx('key');
+    chooseFrac(parseInt(b.dataset.opt,10));
   });
-});
-['fracNumBox','fracDenBox'].forEach(idb=>{
-  const el=document.getElementById(idb);
-  if(el) el.addEventListener('pointerdown',e=>{ e.preventDefault(); GS.fracField=el.dataset.field; renderFracInput(); });
 });
 
 document.addEventListener('keydown',e=>{
   if(document.getElementById('s-game').classList.contains('active')){
     if(isFracLevel){
-      if('0123456789'.includes(e.key)) handleFracInput(e.key);
-      else if(e.key==='Enter') handleFracInput('OK');
-      else if(e.key==='/'||e.key==='ArrowDown'){ e.preventDefault(); GS.fracField='den'; renderFracInput(); }
-      else if(e.key==='ArrowUp'){ e.preventDefault(); GS.fracField='num'; renderFracInput(); }
-      else if(e.key==='Backspace'){ e.preventDefault(); handleFracInput('DEL'); }
-      else if(e.key==='Escape') handleFracInput('C');
+      if('1234'.includes(e.key)) chooseFrac(parseInt(e.key,10)-1);   // 鍵盤 1~4 選項
       return;
     }
     if('0123456789'.includes(e.key)) handleInput(e.key);

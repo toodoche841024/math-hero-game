@@ -218,8 +218,8 @@ curl -s https://math-hero-game.vercel.app/ | grep -c "新增的關鍵字串"
 | 🌊 海洋星(分數四則運算,第 19–28 關,10 關)上線 | ✅ 圖檔待補 |
 
 > **海洋星(2026-07 新增)**:第二顆星球,分數四則運算。分數加減(19–23)+分數乘除(24–28)。守護神海龜長老燦瀾(第 28 關甦醒)。破完燃燒星(第 18 關)後解鎖。
-> - 分數專用資料/邏輯:`genFrac`、`fracEqual`、分數 helper(`gcd`/`reduce`/`fAdd..fDiv`/`fracHTML`/`exprHTML`);`LEVELS['19'..'28']`(帶 `kind:'frac'`);`PLANET_OPS`/`PLANETS`/`curPlanet`;分數輸入 UI(`#frac-input`/`#frac-numpad`/`setInputMode`/`handleFracInput`)。
-> - 判定規則:答案需「數值相等」且「已約到最簡」;兩格輸入(分子/分母),故一律輸入最簡(真/假)分數。出題產生器保證答案非整數、加減結果為正。
+> - 分數專用資料/邏輯:`genFrac`、`buildFracOptions`(四選一誘答)、`fracEqual`、分數 helper(`gcd`/`reduce`/`fAdd..fDiv`/`fracHTML`/`exprHTML`);`LEVELS['19'..'28']`(帶 `kind:'frac'`);`PLANET_OPS`/`PLANETS`/`curPlanet`;分數作答 UI 為**四選一選擇題**(`#frac-choices`/`setInputMode`/`renderFracChoices`/`chooseFrac`;鍵盤 1~4)。
+> - 判定規則:答案需「數值相等」且「已約到最簡」;作答改為**四選一**(不再手動輸入分子/分母),選項含 1 正解＋3 最簡誘答。出題產生器保證答案非整數、加減結果為正。
 > - **待辦(需使用者提供美術)**:`images/` 內 9 張圖 — `ocean_shallow_dead/alive`、`ocean_coral_dead/alive`、`ocean_current_dead/alive`、`ocean_temple_dead/alive`、`turtle_guardian.jpg`。未放前場景顯示純色底(藍)。
 
 ### ❌ 已知未修復 Bug(遊戲端)

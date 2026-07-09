@@ -255,7 +255,7 @@
 
 - **關卡流程** — `startLevel`(3176) → `runCountdown` → `setupGame` →（區域過場）→ 關卡劇情 → `nextQ`/`submit`/`handleInput` → `endGame`(3397) → `showCelebration`/`s-win`/`s-lose`。狀態 `GS`（行 2481，每關重置：血量、題序、分數、連擊、答錯數）。
 - **答題輸入** — `handleInput(v)`(3715) 數字鍵盤（整數，燃燒星）。｜旋鈕②：換學科要改這裡的輸入型態。
-- **分數答題輸入（海洋星，2026-07 新增）** — 兩格（分子/分母）輸入：`#frac-input` + `#frac-numpad`（含「切換」鍵）、`setInputMode(id)`（依 `LEVELS[id].kind==='frac'` 切換整數/分數 UI）、`renderFracInput()`、`handleFracInput(v)`；出題 `genFrac(id)` 回傳 `{html,text,ans:{n,d},kind:'frac'}`；判定 `fracEqual(user,ans)`（需最簡且等值）；分數運算 helper `gcd/reduce/fAdd/fSub/fMul/fDiv/fracHTML/exprHTML`。星球切換：`curPlanet`/`PLANETS`/`PLANET_OPS`、`selectPlanet(p)`、`renderPlanetCards()`（`SS.lv('18')` 解鎖海洋星）。
+- **分數答題（海洋星，2026-07 新增；輸入方式已於 2026-07 改為四選一選擇題）** — `#frac-choices` 四個 `.frac-choice` 按鈕（2×2），每題由 `buildFracOptions(ans)` 產生 1 正解＋3 誘答（皆最簡、分母≥2、與正解不等值、互不重複、洗牌）；`setInputMode(id)`（依 `LEVELS[id].kind==='frac'` 切換整數 numpad／分數選項 UI）、`renderFracChoices(q)`、`chooseFrac(i)`（標記正/誤、鎖定防連點、呼叫 `submit()`；鍵盤 1~4 選項）。出題 `genFrac(id)` 回傳 `{html,text,ans:{n,d},kind:'frac',options:[...]}`；判定 `fracEqual(user,ans)`（需最簡且等值）；分數運算 helper `gcd/reduce/fAdd/fSub/fMul/fDiv/fracHTML/exprHTML`。星球切換：`curPlanet`/`PLANETS`/`PLANET_OPS`、`selectPlanet(p)`、`renderPlanetCards()`（`SS.lv('18')` 解鎖海洋星）。
 - **視覺特效** — `spawnParticles`/`animateParticles`（粒子）、`updateWorldRestore`（迷霧消退）、`updateEnergyBottle`/`resetEnergyBottle`（能量瓶）、`showSceneText`/`showHeroGlow`/`showWrongFogEffect`/`showComboPopup`/`showSpiritAwaken`。
 - **音效** — `ac`/`unlockAudio`/`tone`/`sfx(n)`（WebAudio 合成，無音檔），受 `sound_on` 控制。
 - **星星貨幣** — `addStarFragments`(3757)；顯示 `refreshStarsDisplay`。
