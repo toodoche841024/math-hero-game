@@ -215,12 +215,20 @@ curl -s https://math-hero-game.vercel.app/ | grep -c "新增的關鍵字串"
 | 遊戲 auto-login(?type=child) | ✅ |
 | 品牌統一(數學奇航) | ✅ |
 | Platform 第一次 git commit | ✅ |
-| 🌊 海洋星(分數四則運算,第 19–28 關,10 關)上線 | ✅ 圖檔待補 |
+| 🌊 海洋星(分數四則運算,第 19–28 關,10 關)上線 | ✅ 美術 9 張已上線 |
+| ∑ 綜合計算能力單元(整數 29–31＋分數 32–34,共 6 關)上線 | ✅ |
 
 > **海洋星(2026-07 新增)**:第二顆星球,分數四則運算。分數加減(19–23)+分數乘除(24–28)。守護神海龜長老燦瀾(第 28 關甦醒)。破完燃燒星(第 18 關)後解鎖。
 > - 分數專用資料/邏輯:`genFrac`、`buildFracOptions`(四選一誘答)、`fracEqual`、分數 helper(`gcd`/`reduce`/`fAdd..fDiv`/`fracHTML`/`exprHTML`);`LEVELS['19'..'28']`(帶 `kind:'frac'`);`PLANET_OPS`/`PLANETS`/`curPlanet`;分數作答 UI 為**四選一選擇題**(`#frac-choices`/`setInputMode`/`renderFracChoices`/`chooseFrac`;鍵盤 1~4)。
 > - 判定規則:答案需「數值相等」且「已約到最簡」;作答改為**四選一**(不再手動輸入分子/分母),選項含 1 正解＋3 最簡誘答。出題產生器保證答案非整數、加減結果為正。
-> - **待辦(需使用者提供美術)**:`images/` 內 9 張圖 — `ocean_shallow_dead/alive`、`ocean_coral_dead/alive`、`ocean_current_dead/alive`、`ocean_temple_dead/alive`、`turtle_guardian.jpg`。未放前場景顯示純色底(藍)。
+> - 美術:9 張海洋圖(4 區域 dead/alive＋守護神燦瀾)皆已用 Bing Image Creator 生成並上線。
+
+> **綜合計算能力單元(2026-07 新增)**:在既有星球尾端各加一個「綜合」進階單元,課綱重點是**出題刻意設計,讓孩子用交換/分配/結合律/約分把式子變好算**(遊戲只判答案,不加教學提示——使用者決策)。
+> - 燃燒星「整數綜合」第 29–31 關(數字鍵盤):29 加減湊整、30 乘除湊整百、31 四則含括號/分配律。
+> - 海洋星「分數綜合」第 32–34 關(四選一,`kind:'frac'`):32 加減湊整、33 乘除伸縮約分、34 四則分配律。
+> - 出題邏輯:整數用 `genIntCombo`(模板+reject-sampling)、分數在 `genFrac` 加 case 32–34;皆保證答案為正、量級合理、分數為最簡非整數,且「算式真值 = 標準答案」(Node 3000 題驗證通過)。
+> - 掛載:`PLANET_OPS` 各加一組、`SCENE_MAP` 沿用聖殿場景圖(免新美術)、新增 `LEVELS[id].unlockAfter` 欄位由 `SS.unlocked` 判斷解鎖(29 破 18 解、32 破 28 解),**不動** `UNLOCK_CHAIN`。
+> - **待辦(留最後統整)**:新關卡尚未納入 `PLANET_PUZZLES`(拼圖/守護神),故不影響既有守護神甦醒——依使用者指示留待拼圖統整時再處理。
 
 ### ❌ 已知未修復 Bug(遊戲端)
 

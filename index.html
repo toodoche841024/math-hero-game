@@ -2110,6 +2110,14 @@ const LEVELS = {
   '26':{kind:'frac',op:'f÷',name:'不能約分的除法',           time:180,sc:[[8,100],[12,90],[16,80],[20,70],[24,60]],df:50,S:750,A:650,B:550,mon:'demon', mnm:'暗潮魔王',tr:{i:'🦑',n:'墨晶石'}},
   '27':{kind:'frac',op:'f÷',name:'可以約分的除法',           time:200,sc:[[9,100],[13,90],[17,80],[21,70],[25,60]],df:50,S:750,A:650,B:550,mon:'demon', mnm:'暗潮魔王',tr:{i:'🔱',n:'海神叉'}},
   '28':{kind:'frac',op:'f÷',name:'連續不同分母乘除（3 個數）',time:240,sc:[[12,100],[16,90],[20,80],[25,70],[30,60]],df:50,S:700,A:600,B:500,mon:'dragon',mnm:'深海龍王',tr:{i:'🐢',n:'燦瀾之心'}},
+  // ── 燃燒星進階：整數綜合計算（第 29–31 關，破 18 後解鎖）──
+  '29':{op:'i綜',name:'整數加減綜合（湊整）',   time:200,sc:[[12,100],[16,90],[20,80],[25,70],[30,60]],df:50,S:750,A:650,B:550,mon:'demon', mnm:'熔岩統帥',tr:{i:'🔥',n:'綜算火徽'},   unlockAfter:'18'},
+  '30':{op:'i綜',name:'整數乘除綜合（湊整）',   time:220,sc:[[12,100],[16,90],[20,80],[25,70],[30,60]],df:50,S:750,A:650,B:550,mon:'demon', mnm:'烈焰統帥',tr:{i:'⚡',n:'綜算雷徽'},   unlockAfter:'29'},
+  '31':{op:'i綜',name:'整數四則綜合（含括號）', time:240,sc:[[14,100],[18,90],[22,80],[27,70],[32,60]],df:50,S:700,A:600,B:500,mon:'dragon',mnm:'燃燒試煉王',tr:{i:'👑',n:'綜算王冠'}, unlockAfter:'30'},
+  // ── 海洋星進階：分數綜合計算（第 32–34 關，破 28 後解鎖）──
+  '32':{kind:'frac',op:'f綜',name:'分數加減綜合（湊整）',   time:220,sc:[[12,100],[16,90],[20,80],[25,70],[30,60]],df:50,S:750,A:650,B:550,mon:'demon', mnm:'潮汐統帥',tr:{i:'🌊',n:'綜算浪徽'},   unlockAfter:'28'},
+  '33':{kind:'frac',op:'f綜',name:'分數乘除綜合（約分）',   time:240,sc:[[12,100],[16,90],[20,80],[25,70],[30,60]],df:50,S:750,A:650,B:550,mon:'demon', mnm:'深淵統帥',tr:{i:'🌀',n:'綜算漩徽'},   unlockAfter:'32'},
+  '34':{kind:'frac',op:'f綜',name:'分數四則綜合（分配律）', time:240,sc:[[14,100],[18,90],[22,80],[27,70],[32,60]],df:50,S:700,A:600,B:500,mon:'dragon',mnm:'海洋試煉王',tr:{i:'🔱',n:'綜算聖冠'}, unlockAfter:'33'},
 };
 const OPS = [
   {id:'add',name:'加法',icon:'＋',ids:['1','2','3','4','5']},
@@ -2119,10 +2127,14 @@ const OPS = [
 ];
 // ── 星球設定（燃燒星、海洋星）──
 const PLANET_OPS = {
-  burning: OPS,
+  burning: [
+    ...OPS,
+    {id:'iall',name:'整數綜合',icon:'∑',ids:['29','30','31']},
+  ],
   ocean: [
     {id:'fadd',name:'分數加減',icon:'＋－',ids:['19','20','21','22','23']},
     {id:'fmul',name:'分數乘除',icon:'×÷',ids:['24','25','26','27','28']},
+    {id:'fall',name:'分數綜合',icon:'∑',ids:['32','33','34']},
   ],
 };
 const PLANETS = {
@@ -2146,6 +2158,8 @@ const SS = {
   lv(id){try{return JSON.parse(localStorage.getItem('mc_lv_'+id))||null}catch{return null}},
   saveLv(id,d){localStorage.setItem('mc_lv_'+id,JSON.stringify(d))},
   unlocked(id){
+    const lv=LEVELS[id];
+    if(lv && lv.unlockAfter!==undefined) return lv.unlockAfter==='' || !!SS.lv(lv.unlockAfter);
     const i=UNLOCK_CHAIN.indexOf(id);
     if(i<=0)return true;
     return !!SS.lv(UNLOCK_CHAIN[i-1]);
@@ -2642,6 +2656,41 @@ function genFrac(id){
         parts=[x,o1,y,o2,z];
         break;
       }
+      case'32':{ // 分數加減綜合（3~5 數）：含互補湊整配對 → 交換律好算
+        const cnt=R(3,5);
+        const dd=R(3,9), nn=R(1,dd-1);
+        const list=[{n:nn,d:dd},{n:dd-nn,d:dd}];        // 互補配對（和為 1）
+        for(let i=2;i<cnt;i++) list.push(pfR(9));
+        for(let i=list.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[list[i],list[j]]=[list[j],list[i]];}
+        parts=[list[0]]; let s={n:list[0].n,d:list[0].d};
+        for(let i=1;i<list.length;i++){
+          let o=Math.random()<0.6?'＋':'－';
+          let ns=o==='＋'?fAdd(s,list[i]):fSub(s,list[i]);
+          if(ns.n<=0){ o='＋'; ns=fAdd(s,list[i]); }     // 防止負數
+          parts.push(o,list[i]); s=ns;
+        }
+        ans=s;
+        break;
+      }
+      case'33':{ // 分數乘除綜合（3~5 數）：伸縮式 → 跨項可大量約分
+        const cnt=R(3,5);
+        const v=[]; for(let i=0;i<=cnt;i++) v.push(R(2,12));
+        parts=[{n:v[0],d:v[1]}];
+        for(let i=1;i<cnt;i++){
+          if(Math.random()<0.5) parts.push('×',{n:v[i],d:v[i+1]});
+          else parts.push('÷',{n:v[i+1],d:v[i]});        // ÷ 倒數 ＝ 同值，仍可約分
+        }
+        ans=reduce(v[0], v[cnt]);                        // 中間項全約掉 ＝ v0/v_cnt
+        break;
+      }
+      case'34':{ // 分數四則綜合：分配律模板 a×b ＋ a×c
+        const a=pfR(9);                                  // 共同因數 a（真分數）
+        const k=R(2,6), bn=R(1,2*k-1), cn=R(1,2*k-1);
+        const b={n:bn,d:k}, c={n:cn,d:k};                // 同分母 b、c
+        ans=fAdd(fMul(a,b), fMul(a,c));                  // ＝ a×(b＋c)
+        parts=[a,'×',b,'＋',a,'×',c];
+        break;
+      }
       default: return {html:'', text:'', ans:{n:0,d:1}, kind:'frac'};
     }
     if(!ans || ans.d<2 || ans.n<=0) continue;           // 統一約束：非整數、正值、最簡（reduce 已保證）
@@ -2651,8 +2700,93 @@ function genFrac(id){
   return {html:exprHTML([{n:1,d:5},'＋',{n:2,d:5}]), text:'1/5 ＋ 2/5 = ?', ans:fb, kind:'frac', options:buildFracOptions(fb)};
 }
 
+// ═══════════════════════════════════════════════
+// 整數綜合出題（第 29–31 關）：回傳 {text, ans}（正整數）
+// 題目刻意設計成「用交換／分配／結合律會更好算」，遊戲只判定答案
+// ═══════════════════════════════════════════════
+function shuffleArr(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function genIntCombo(id){
+  const R=r;
+  let guard=400;
+  while(guard-->0){
+    if(id==='29'){
+      // 加減：含一組湊整配對 (a, T−a)，再插 1~3 個雜項；隨機 ＋／－，逐步保證 ≥0
+      const T=[20,50,100][R(0,2)];
+      const a=R(1,T-1), b=T-a;
+      const terms=[a,b];
+      const extra=R(1,3);
+      for(let i=0;i<extra;i++) terms.push(R(2,40));
+      shuffleArr(terms);
+      const ops=[]; let acc=terms[0];
+      for(let i=1;i<terms.length;i++){
+        let o = Math.random()<0.55?'＋':'－';
+        if(o==='－' && acc-terms[i]<0) o='＋';   // 防止負數
+        acc = o==='＋'?acc+terms[i]:acc-terms[i];
+        ops.push(o);
+      }
+      if(acc<=0 || terms.length<3) continue;
+      let text=`${terms[0]}`;
+      for(let i=1;i<terms.length;i++) text+=` ${ops[i-1]} ${terms[i]}`;
+      return {text:text+' = ?', ans:acc};
+    }
+    if(id==='30'){
+      // 乘除：以「湊整百配對」為核，乘法鏈 3~5 項，偶插一個能整除的 ÷
+      const pairs=[[25,4],[4,25],[2,50],[50,2],[8,125],[125,8],[5,20],[20,5],[2,5],[5,2]];
+      const p=pairs[R(0,pairs.length-1)];
+      const terms=[p[0],p[1]];
+      const extra=R(1,2);
+      for(let i=0;i<extra;i++) terms.push(R(2,9));
+      shuffleArr(terms);
+      const prod=terms.reduce((x,y)=>x*y,1);
+      if(prod>9999 || prod<10 || terms.length<3) continue;
+      if(Math.random()<0.5){
+        const divs=[]; for(let d=2;d<=9;d++) if(prod%d===0) divs.push(d);
+        if(!divs.length) continue;
+        const dv=divs[R(0,divs.length-1)];
+        const ans=prod/dv;
+        if(ans<10 || ans>9999) continue;
+        return {text:terms.join(' × ')+` ÷ ${dv} = ?`, ans};
+      }
+      return {text:terms.join(' × ')+' = ?', ans:prod};
+    }
+    if(id==='31'){
+      // 四則綜合：分配律等模板，可含括號
+      const tmpl=R(0,3);
+      if(tmpl===0){                                  // 分配律外提 a×b＋a×c（b+c 湊整）
+        const a=R(2,25); const s=[10,20,100][R(0,2)];
+        const b=R(1,s-1), c=s-b; const ans=a*b+a*c;
+        if(ans>9999) continue;
+        return {text:`${a} × ${b} ＋ ${a} × ${c} = ?`, ans};
+      }
+      if(tmpl===1){                                  // 分配律內乘 a×(b＋c)（b+c 湊整）
+        const a=R(2,30); const s=[10,20,100][R(0,2)];
+        const b=R(1,s-1), c=s-b; const ans=a*(b+c);
+        if(ans>9999) continue;
+        return {text:`${a} × ( ${b} ＋ ${c} ) = ?`, ans};
+      }
+      if(tmpl===2){                                  // 近整 (100±k)×m
+        const k=R(1,9), m=R(2,9);
+        const sign = Math.random()<0.5?'＋':'－';
+        const val = sign==='＋'?100+k:100-k; const ans=val*m;
+        if(ans<=0||ans>9999) continue;
+        return {text:`( 100 ${sign} ${k} ) × ${m} = ?`, ans};
+      }
+      // tmpl===3：結合＋乘 a×b×c ＋ d（含湊整配對）
+      const pairs=[[25,4],[2,50],[8,125],[5,20],[2,5]];
+      const p=pairs[R(0,pairs.length-1)];
+      const c=R(2,9), d=R(5,50); const ans=p[0]*p[1]*c+d;
+      if(ans>9999) continue;
+      const t=shuffleArr([p[0],p[1],c]);
+      return {text:`${t[0]} × ${t[1]} × ${t[2]} ＋ ${d} = ?`, ans};
+    }
+    break;
+  }
+  return {text:'25 × 4 ＋ 8 = ?', ans:108};  // fallback
+}
+
 function genQ(id){
   if(LEVELS[id] && LEVELS[id].kind==='frac') return genFrac(id);
+  if(id==='29'||id==='30'||id==='31') return genIntCombo(id);
   let a,b,ans,text;
   switch(id){
     case'1': a=r(1,9);b=r(1,9);ans=a+b;text=`${a} ＋ ${b} = ?`;break;
@@ -3094,6 +3228,13 @@ const SCENE_MAP = {
   26: { dead: 'images/ocean_current_dead.jpg', alive: 'images/ocean_current_alive.jpg', zone: '深海洋流' },
   27: { dead: 'images/ocean_temple_dead.jpg',  alive: 'images/ocean_temple_alive.jpg',  zone: '龜島聖殿' },
   28: { dead: 'images/ocean_temple_dead.jpg',  alive: 'images/ocean_temple_alive.jpg',  zone: '龜島聖殿' },
+  // ── 進階綜合關（沿用既有聖殿場景，免新美術）──
+  29: { dead: 'images/fire_temple_dead.jpg',   alive: 'images/fire_temple_alive.jpg',   zone: '鳳凰聖殿' },
+  30: { dead: 'images/fire_temple_dead.jpg',   alive: 'images/fire_temple_alive.jpg',   zone: '鳳凰聖殿' },
+  31: { dead: 'images/fire_temple_dead.jpg',   alive: 'images/fire_temple_alive.jpg',   zone: '鳳凰聖殿' },
+  32: { dead: 'images/ocean_temple_dead.jpg',  alive: 'images/ocean_temple_alive.jpg',  zone: '龜島聖殿' },
+  33: { dead: 'images/ocean_temple_dead.jpg',  alive: 'images/ocean_temple_alive.jpg',  zone: '龜島聖殿' },
+  34: { dead: 'images/ocean_temple_dead.jpg',  alive: 'images/ocean_temple_alive.jpg',  zone: '龜島聖殿' },
 };
 
 const ZONE_DIALOGS = {
@@ -3821,6 +3962,8 @@ const CELEB_DATA = {
   '18':{title:'👑 燃燒星完全制霸！\n守護神即將甦醒！',unlock:'🌟 你是燃燒星的英雄！'},
   '23':{title:'🌊 分數加減試煉完成！\n你已掌握分數的加減！',unlock:'🔓 分數乘除試煉已解鎖！'},
   '28':{title:'🐢 海洋星完全制霸！\n守護神即將甦醒！',unlock:'🌟 你是海洋星的英雄！'},
+  '31':{title:'∑ 整數綜合試煉完成！\n你學會用運算律讓計算變聰明！',unlock:'🌟 燃燒星的綜合大師！'},
+  '34':{title:'∑ 分數綜合試煉完成！\n你已是分數計算的高手！',unlock:'🌟 海洋星的綜合大師！'},
 };
 let _celebWinCb=null;
 let _celebTimeout=null;
