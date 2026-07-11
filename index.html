@@ -2111,13 +2111,13 @@ const LEVELS = {
   '27':{kind:'frac',op:'f÷',name:'可以約分的除法',           time:200,sc:[[9,100],[13,90],[17,80],[21,70],[25,60]],df:50,S:750,A:650,B:550,mon:'demon', mnm:'暗潮魔王',tr:{i:'🔱',n:'海神叉'}},
   '28':{kind:'frac',op:'f÷',name:'連續不同分母乘除（3 個數）',time:240,sc:[[12,100],[16,90],[20,80],[25,70],[30,60]],df:50,S:700,A:600,B:500,mon:'dragon',mnm:'深海龍王',tr:{i:'🐢',n:'燦瀾之心'}},
   // ── 燃燒星進階：整數綜合計算（第 29–31 關，破 18 後解鎖）──
-  '29':{op:'i綜',name:'整數加減綜合（湊整）',   time:200,sc:[[12,100],[16,90],[20,80],[25,70],[30,60]],df:50,S:750,A:650,B:550,mon:'demon', mnm:'熔岩統帥',tr:{i:'🔥',n:'綜算火徽'},   unlockAfter:'18'},
-  '30':{op:'i綜',name:'整數乘除綜合（湊整）',   time:220,sc:[[12,100],[16,90],[20,80],[25,70],[30,60]],df:50,S:750,A:650,B:550,mon:'demon', mnm:'烈焰統帥',tr:{i:'⚡',n:'綜算雷徽'},   unlockAfter:'29'},
-  '31':{op:'i綜',name:'整數四則綜合（含括號）', time:240,sc:[[14,100],[18,90],[22,80],[27,70],[32,60]],df:50,S:700,A:600,B:500,mon:'dragon',mnm:'燃燒試煉王',tr:{i:'👑',n:'綜算王冠'}, unlockAfter:'30'},
+  '29':{op:'i綜',name:'整數加減·湊整巧算',   time:200,sc:[[12,100],[16,90],[20,80],[25,70],[30,60]],df:50,S:750,A:650,B:550,mon:'demon', mnm:'熔岩統帥',tr:{i:'🔥',n:'綜算火徽'},   unlockAfter:'18'},
+  '30':{op:'i綜',name:'整數乘除·湊整巧算',   time:220,sc:[[12,100],[16,90],[20,80],[25,70],[30,60]],df:50,S:750,A:650,B:550,mon:'demon', mnm:'烈焰統帥',tr:{i:'⚡',n:'綜算雷徽'},   unlockAfter:'29'},
+  '31':{op:'i綜',name:'整數四則·分配律', time:240,sc:[[14,100],[18,90],[22,80],[27,70],[32,60]],df:50,S:700,A:600,B:500,mon:'dragon',mnm:'燃燒試煉王',tr:{i:'👑',n:'綜算王冠'}, unlockAfter:'30'},
   // ── 海洋星進階：分數綜合計算（第 32–34 關，破 28 後解鎖）──
-  '32':{kind:'frac',op:'f綜',name:'分數加減綜合（湊整）',   time:220,sc:[[12,100],[16,90],[20,80],[25,70],[30,60]],df:50,S:750,A:650,B:550,mon:'demon', mnm:'潮汐統帥',tr:{i:'🌊',n:'綜算浪徽'},   unlockAfter:'28'},
-  '33':{kind:'frac',op:'f綜',name:'分數乘除綜合（約分）',   time:240,sc:[[12,100],[16,90],[20,80],[25,70],[30,60]],df:50,S:750,A:650,B:550,mon:'demon', mnm:'深淵統帥',tr:{i:'🌀',n:'綜算漩徽'},   unlockAfter:'32'},
-  '34':{kind:'frac',op:'f綜',name:'分數四則綜合（分配律）', time:240,sc:[[14,100],[18,90],[22,80],[27,70],[32,60]],df:50,S:700,A:600,B:500,mon:'dragon',mnm:'海洋試煉王',tr:{i:'🔱',n:'綜算聖冠'}, unlockAfter:'33'},
+  '32':{kind:'frac',op:'f綜',name:'分數加減·湊成1',   time:220,sc:[[12,100],[16,90],[20,80],[25,70],[30,60]],df:50,S:750,A:650,B:550,mon:'demon', mnm:'潮汐統帥',tr:{i:'🌊',n:'綜算浪徽'},   unlockAfter:'28'},
+  '33':{kind:'frac',op:'f綜',name:'分數乘除·約分巧算',   time:240,sc:[[12,100],[16,90],[20,80],[25,70],[30,60]],df:50,S:750,A:650,B:550,mon:'demon', mnm:'深淵統帥',tr:{i:'🌀',n:'綜算漩徽'},   unlockAfter:'32'},
+  '34':{kind:'frac',op:'f綜',name:'分數四則·分配律', time:240,sc:[[14,100],[18,90],[22,80],[27,70],[32,60]],df:50,S:700,A:600,B:500,mon:'dragon',mnm:'海洋試煉王',tr:{i:'🔱',n:'綜算聖冠'}, unlockAfter:'33'},
 };
 const OPS = [
   {id:'add',name:'加法',icon:'＋',ids:['1','2','3','4','5']},
@@ -2546,6 +2546,23 @@ function buildFracOptions(ans){
   const eq=f=>f.n*ans.d===ans.n*f.d;               // 與正解等值？
   const opts=[{n:ans.n,d:ans.d}];
   const seen={[key(ans)]:1};
+  if(ans.d===1){                                    // 整數答案：鄰近整數 ＋ 一個「差 0.5」分數誘答
+    const N=ans.n;
+    const icand=[{n:N+1,d:1},{n:N-1,d:1},{n:N+2,d:1},{n:N-2,d:1},{n:N+3,d:1},{n:N-3,d:1},
+                 {n:2*N+1,d:2},{n:2*N-1,d:2}];
+    for(let i=icand.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[icand[i],icand[j]]=[icand[j],icand[i]];}
+    for(const c of icand){
+      if(opts.length>=4) break;
+      if(c.n<=0) continue;
+      const rc=reduce(c.n,c.d);
+      if(seen[key(rc)]||eq(rc)) continue;
+      seen[key(rc)]=1; opts.push(rc);
+    }
+    let g2=60;
+    while(opts.length<4 && g2-->0){ const c=reduce(N+r(-4,5),1); if(c.n>0&&!seen[key(c)]&&!eq(c)){seen[key(c)]=1;opts.push(c);} }
+    for(let i=opts.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[opts[i],opts[j]]=[opts[j],opts[i]];}
+    return opts;
+  }
   const cand=[
     {n:ans.n+1,d:ans.d},{n:ans.n-1,d:ans.d},
     {n:ans.n,d:ans.d+1},{n:ans.n,d:ans.d-1},
@@ -2656,49 +2673,64 @@ function genFrac(id){
         parts=[x,o1,y,o2,z];
         break;
       }
-      case'32':{ // 分數加減綜合：互補湊 1 ＋ 一個簡單餘項 → 塌縮成乾淨簡分數
-        // 例：3/8 ＋ 2/5 ＋ 5/8 →（3/8+5/8）+2/5 = 1 + 2/5 = 7/5
-        const npair=R(1,2);                              // 1~2 組互補配對（各湊成 1）
-        const list=[];
-        for(let i=0;i<npair;i++){ const D=R(3,9), x=R(1,D-1); list.push({n:x,d:D},{n:D-x,d:D}); }
-        const extra=pfR(9);                              // 簡單最簡真分數餘項
-        const sign=Math.random()<0.5?'＋':'－';
-        ans = sign==='＋' ? reduce(npair*extra.d+extra.n, extra.d)
-                          : reduce(npair*extra.d-extra.n, extra.d);
-        for(let i=list.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[list[i],list[j]]=[list[j],list[i]];}
-        parts=[list[0]];
-        for(let i=1;i<list.length;i++) parts.push('＋',list[i]);
-        parts.push(sign,extra);                          // 餘項帶 ＋／－
-        break;
-      }
-      case'33':{ // 分數乘除綜合：伸縮式約分 → 塌縮成乾淨簡分數（非整數、非 1）
-        // 例：2/3 × 9/10 × 5/6 = 1/2；中間項全約掉 ＝ v0/v_cnt
-        const cnt=R(3,5);
-        const v=[]; for(let i=0;i<=cnt;i++) v.push(R(2,9));
-        let adj=false; for(let i=0;i<cnt;i++) if(v[i]===v[i+1]) adj=true;
-        if(adj) continue;                                 // 避免出現 n/n＝1 的項
-        const res=reduce(v[0], v[cnt]);
-        if(res.d<2 || res.n===res.d || res.n>9) continue; // 需簡單、非整數、非 1
-        parts=[{n:v[0],d:v[1]}];
-        for(let i=1;i<cnt;i++){
-          if(Math.random()<0.5) parts.push('×',{n:v[i],d:v[i+1]});
-          else parts.push('÷',{n:v[i+1],d:v[i]});        // ÷ 倒數 ＝ 同值，仍可約分
+      case'32':{ // 分數加減·湊成 1：同分母、分子和為分母的「好朋友」湊成 1
+        // 例：2/7 ＋ 3/5 ＋ 5/7 ＋ 2/5 =（2/7+5/7）+（3/5+2/5）= 1+1 = 2
+        //     3/8 ＋ 5/9 ＋ 5/8 = 1 + 5/9 = 14/9
+        const TRIPLES=[[[1,2],[1,3],[1,6]],[[1,2],[2,5],[1,10]],[[1,3],[1,4],[5,12]],[[1,2],[1,4],[1,4]]];
+        let list=[];
+        if(Math.random()<0.35){                          // 樣式 B：三個不同分母湊成 1
+          const tp=TRIPLES[R(0,TRIPLES.length-1)];
+          list=tp.map(p=>({n:p[0],d:p[1]}));
+          ans={n:1,d:1};
+        } else {                                         // 樣式 A：1~2 組同分母互補配對
+          const np=R(1,2);
+          for(let i=0;i<np;i++){ const D=R(3,9), x=R(1,D-1); list.push({n:x,d:D},{n:D-x,d:D}); }
+          let extra=null, sign='＋';
+          if(np===1 || Math.random()<0.5){ extra=pfR(9); sign=Math.random()<0.5?'＋':'－'; }
+          ans = !extra ? {n:np,d:1}
+              : (sign==='＋' ? reduce(np*extra.d+extra.n, extra.d) : reduce(np*extra.d-extra.n, extra.d));
+          for(let i=list.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[list[i],list[j]]=[list[j],list[i]];}
+          parts=[list[0]];
+          for(let i=1;i<list.length;i++) parts.push('＋',list[i]);
+          if(extra) parts.push(sign,extra);
+          break;
         }
-        ans=res;
+        for(let i=list.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[list[i],list[j]]=[list[j],list[i]];}
+        parts=[list[0]]; for(let i=1;i<list.length;i++) parts.push('＋',list[i]);
         break;
       }
-      case'34':{ // 分數四則綜合：分配律 a×b ＋ a×c，b＋c=1 → 答案 ＝ a（簡分數）
-        // 例：2/3 × 1/4 ＋ 2/3 × 3/4 = 2/3×(1/4+3/4) = 2/3×1 = 2/3
-        const a=pfR(9);                                  // 共同因數 a（最簡真分數）
-        const k=R(2,7), x=R(1,k-1);
-        const b={n:x,d:k}, c={n:k-x,d:k};                // 同分母、b＋c = 1
-        ans={n:a.n,d:a.d};                               // ＝ a×1 ＝ a
-        parts=[a,'×',b,'＋',a,'×',c];
+      case'33':{ // 分數乘除·連乘約分：倒數配對相消，剩下乾淨的數（整數或簡分數）
+        // 例：4/9 × 7 × 9/4 = 7；3/7 × 5/8 × 7/3 = 5/8
+        const p=R(2,9), q=R(2,9);
+        if(p===q || gcd(p,q)!==1) continue;               // p/q 最簡且非 1
+        const A={n:p,d:q}, B={n:q,d:p};                   // 互為倒數，乘積 = 1
+        const rest = Math.random()<0.6 ? {n:R(2,12),d:1} : pfR(9);   // 剩下：整數 或 簡真分數
+        ans={n:rest.n,d:rest.d};                          // 相消後 = rest
+        if(Math.random()<0.5) parts=[A,'×',rest,'×',B];   // 倒數對分置兩端（交換律才湊得起）
+        else                  parts=[A,'×',rest,'÷',A];   // 同分數 ×、÷ 相消（乘除）
+        break;
+      }
+      case'34':{ // 分數四則·分配律：提共同分數，括號內湊成分母的倍數 → 整數答案
+        // 例：5/7 × 13 ＋ 5/7 × 8 = 5/7 × 21 = 15；7/12 × 19 － 7/12 × 7 = 7/12×12 = 7
+        const b=R(3,9), a=R(1,b-1);
+        if(gcd(a,b)!==1) continue;                        // a/b 最簡真分數
+        const t=R(1,6), S=t*b;                            // 括號內湊成 b 的倍數
+        const sub=Math.random()<0.4;
+        let m,n;
+        if(!sub){ m=R(1,S-1); n=S-m; }                    // m＋n = S
+        else { n=R(1,20); m=S+n; }                        // m－n = S
+        if(m<2||n<2||m>40||n>40||(!sub&&m===n)) continue;
+        ans={n:a*t,d:1};                                  // = a/b × S = a×t（整數）
+        parts = sub ? [{n:a,d:b},'×',{n:m,d:1},'－',{n:a,d:b},'×',{n:n,d:1}]
+                    : [{n:a,d:b},'×',{n:m,d:1},'＋',{n:a,d:b},'×',{n:n,d:1}];
         break;
       }
       default: return {html:'', text:'', ans:{n:0,d:1}, kind:'frac'};
     }
-    if(!ans || ans.d<2 || ans.n<=0) continue;           // 統一約束：非整數、正值、最簡（reduce 已保證）
+    const allowInt=(id==='32'||id==='33'||id==='34');   // 綜合關可出整數/假分數答案
+    if(!ans || ans.n<=0) continue;
+    if(!allowInt && ans.d<2) continue;                  // 19–28：仍限非整數
+    if(allowInt && (ans.d>12 || ans.n>99)) continue;    // 綜合關：答案須簡潔
     return {html:exprHTML(parts), text:fracText(parts), ans, kind:'frac', options:buildFracOptions(ans)};
   }
   const fb={n:3,d:5};
@@ -2715,51 +2747,77 @@ function genIntCombo(id){
   let guard=500;
   while(guard-->0){
     if(id==='29'){
-      // 加減·湊整：配對湊成整十/整百，答案乾淨（無隨機符號 bug）
-      const t=R(0,2);
-      if(t===0){ // 湊百加法：1~2 組互補配對（單組時再補一個整十，確保 ≥3 項）
-        const np=R(1,2); const terms=[];
-        for(let i=0;i<np;i++){ const x=R(11,89); terms.push(x,100-x); }
-        if(np===1) terms.push([20,30,40,50,60][R(0,4)]);
-        shuffleArr(terms);
-        return {text:terms.join(' ＋ ')+' = ?', ans:terms.reduce((a,b)=>a+b,0)};
+      // 加減·交換/結合/湊整：配對湊成整十百，答案乾淨
+      const t=R(0,4);
+      if(t===0){ // 一小一大兩組互補（交換律）：4 ＋ 78 ＋ 6 ＋ 22
+        const T1=[10,20][R(0,1)], T2=[100,200][R(0,1)];
+        const x=R(2,T1-2), u=R(2,T2-2);
+        const terms=[x,u,T1-x,T2-u]; shuffleArr(terms);
+        return {text:terms.join(' ＋ ')+' = ?', ans:T1+T2};
       }
-      if(t===1){ // 連減湊整：A － b － c，b＋c 湊 100
-        const b=R(11,89), c=100-b, A=R(120,900);
-        const sub=Math.random()<0.5?[b,c]:[c,b];
+      if(t===1){ // 一組湊整＋落單（結合律：選對先算誰）：57 ＋ 43 ＋ 91
+        const T=[100,200][R(0,1)], x=R(11,T-11), solo=R(11,99);
+        const terms=[x,T-x,solo]; shuffleArr(terms);
+        return {text:terms.join(' ＋ ')+' = ?', ans:T+solo};
+      }
+      if(t===2){ // 湊整高手：兩組各湊整：88 ＋ 45 ＋ 12 ＋ 55
+        const A=[100,200][R(0,1)], B=[100,200][R(0,1)];
+        const x=R(11,A-11), u=R(11,B-11);
+        const terms=[x,u,A-x,B-u]; shuffleArr(terms);
+        return {text:terms.join(' ＋ ')+' = ?', ans:A+B};
+      }
+      if(t===3){ // 連減湊整：A － b － c（b＋c＝100）
+        const b=R(11,89), A=R(120,900), sub=Math.random()<0.5?[b,100-b]:[100-b,b];
         return {text:`${A} － ${sub[0]} － ${sub[1]} = ?`, ans:A-100};
       }
-      // t===2：混合湊整 (a＋b) － (c＋d)，各自湊整
-      const R1=[200,300,400][R(0,2)], R2=[100,150,200][R(0,2)];
-      if(R1<=R2) continue;
-      const a=R((R1*0.3)|0,(R1*0.7)|0), b=R1-a;
-      const c=R(Math.max(11,(R2*0.3)|0),(R2*0.7)|0), d=R2-c;
-      if(b<=0||d<=0) continue;
-      return {text:`${a} ＋ ${b} － ${c} － ${d} = ?`, ans:R1-R2};
+      // t===4：加減混合 (a＋b) － (c＋d)，各自湊整
+      const R1=[200,300][R(0,1)], R2=[100,150][R(0,1)];
+      const a=R((R1*0.3)|0,(R1*0.7)|0), c=R((R2*0.3)|0,(R2*0.7)|0);
+      return {text:`${a} ＋ ${R1-a} － ${c} － ${R2-c} = ?`, ans:R1-R2};
     }
     if(id==='30'){
-      // 乘除·湊整百：招牌配對，答案乾淨 ≤ 幾千
-      const t=R(0,3);
-      if(t===0){ const k=R(2,30); return {text:shuffleArr([25,4,k]).join(' × ')+' = ?', ans:100*k}; }
-      if(t===1){ const k=R(2,5);  return {text:shuffleArr([125,8,k]).join(' × ')+' = ?', ans:1000*k}; }
-      if(t===2){ const k=R(2,9), e=R(2,9), val=10*k*e; if(val>3000) continue;
-                 return {text:shuffleArr([2,5,k,e]).join(' × ')+' = ?', ans:val}; }
-      // t===3：除法結合 A ÷ 25 ÷ 4 ＝ A÷100
-      const m=R(2,30); const dv=shuffleArr([25,4]);
-      return {text:`${100*m} ÷ ${dv[0]} ÷ ${dv[1]} = ?`, ans:m};
+      // 乘除·交換/結合：招牌配對湊整百千
+      const PAIRS=[[2,5],[5,2],[25,4],[4,25],[125,8],[8,125],[20,5],[5,20],[50,2],[2,50]];
+      const pk=()=>PAIRS[R(0,PAIRS.length-1)];
+      const t=R(0,4);
+      if(t===0){ // 配對分置兩端（交換律）：2 × 39 × 5、25 × 13 × 4
+        const p=pk(), k=R(2,49), val=p[0]*p[1]*k; if(val>99999) continue;
+        return {text:`${p[0]} × ${k} × ${p[1]} = ?`, ans:val};
+      }
+      if(t===1){ // 好對放後面（結合律）：6 × 125 × 8
+        const p=pk(), k=R(2,9), val=p[0]*p[1]*k; if(val>99999) continue;
+        return {text:`${k} × ${p[0]} × ${p[1]} = ?`, ans:val};
+      }
+      if(t===2){ // 湊整高手：兩組配對：4 × 25 × 8 × 125
+        const p1=pk(), p2=pk(), val=p1[0]*p1[1]*p2[0]*p2[1]; if(val>100000) continue;
+        const terms=[p1[0],p2[0],p1[1],p2[1]]; shuffleArr(terms);
+        return {text:terms.join(' × ')+' = ?', ans:val};
+      }
+      if(t===3){ const m=R(2,30), dv=shuffleArr([25,4]); return {text:`${100*m} ÷ ${dv[0]} ÷ ${dv[1]} = ?`, ans:m}; }
+      const m=R(11,99), dv=shuffleArr([2,5]); return {text:`${10*m} ÷ ${dv[0]} ÷ ${dv[1]} = ?`, ans:m};
     }
     if(id==='31'){
-      // 四則·分配律：塌縮成整百倍，答案乾淨 ≤ 幾千
-      const t=R(0,3);
-      if(t===0){ const a=R(2,30); return {text:`${a} × 99 ＋ ${a} = ?`, ans:a*100}; }
-      if(t===1){ const a=R(2,30); return {text:`${a} × 101 － ${a} = ?`, ans:a*100}; }
-      if(t===2){ const k=R(2,30), p=R(11,89), q=100-p;         // p×k ＋ q×k ＝ 100k
-                 const o=Math.random()<0.5?[p,q]:[q,p];
-                 return {text:`${o[0]} × ${k} ＋ ${o[1]} × ${k} = ?`, ans:100*k}; }
-      // t===3：a × (b ＋ c)，b＋c 湊整
-      const a=R(2,30), s=[10,20,100][R(0,2)], b=R(1,s-1), c=s-b;
-      if(a*s>3000) continue;
-      return {text:`${a} × ( ${b} ＋ ${c} ) = ?`, ans:a*s};
+      // 四則·分配律：提出共同的數，塌縮成整（十/百/千）倍
+      const t=R(0,4);
+      if(t===0){ // 提共同數（加）：25 × 37 ＋ 25 × 63
+        const a=R(3,60), S=[10,100,1000][R(0,2)], m=R(2,S-2), n=S-m;
+        if(a*S>99999 || m===n) continue; const o=Math.random()<0.5?[m,n]:[n,m];
+        return {text:`${a} × ${o[0]} ＋ ${a} × ${o[1]} = ?`, ans:a*S};
+      }
+      if(t===1){ const a=R(3,90); return {text:`${a} × 99 ＋ ${a} = ?`, ans:a*100}; } // 68 × 99 ＋ 68
+      if(t===2){ // 提共同數（減）：87 × 13 － 87 × 3
+        const a=R(3,90), S=[10,20,100][R(0,2)], n=R(2,20), m=n+S;
+        if(a*S>99999 || m>99) continue;
+        return {text:`${a} × ${m} － ${a} × ${n} = ?`, ans:a*S};
+      }
+      if(t===3){ // 共同乘數：27 × 15 ＋ 73 × 15
+        const k=R(3,30), p=R(11,89), q=100-p, o=Math.random()<0.5?[p,q]:[q,p];
+        return {text:`${o[0]} × ${k} ＋ ${o[1]} × ${k} = ?`, ans:100*k};
+      }
+      // t===4：括號分配 a × (m ＋ n)，m＋n 湊整
+      const a=R(3,60), S=[10,20,100][R(0,2)], m=R(1,S-1), n=S-m;
+      if(a*S>99999) continue;
+      return {text:`${a} × ( ${m} ＋ ${n} ) = ?`, ans:a*S};
     }
     break;
   }
